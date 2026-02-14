@@ -1,4 +1,19 @@
+import { useEffect, useState } from "react";
+
 function App() {
+  const [greeting, setGreeting] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetch("/api/hello")
+      .then((res) => {
+        if (!res.ok) throw new Error(`Server responded with ${res.status}`);
+        return res.json();
+      })
+      .then((data) => setGreeting(data.message))
+      .catch((err) => setError(err.message));
+  }, []);
+
   return (
     <div className="relative min-h-screen bg-dibbla-dark overflow-hidden">
       {/* Background grid pattern */}
@@ -36,7 +51,16 @@ function App() {
 
         {/* Main heading */}
         <h1 className="text-5xl md:text-7xl font-bold text-white mb-4 tracking-tight text-center">
-          Hello <span className="text-dibbla-green">World</span>
+          {error ? (
+            <span className="text-red-400">Failed to load</span>
+          ) : greeting ? (
+            <>
+              {greeting.replace(/(\S+)$/, "").trim()}{" "}
+              <span className="text-dibbla-green">{greeting.split(" ").pop()}</span>
+            </>
+          ) : (
+            <span className="text-white/40">Loading...</span>
+          )}
         </h1>
 
         {/* Subtitle */}
