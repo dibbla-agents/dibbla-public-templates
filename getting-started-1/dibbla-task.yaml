@@ -8,8 +8,9 @@ env:
 tools:
   brew:
     check: "brew --version"
+    privileged: true
     install:
-      darwin: '/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"'
+      darwin: 'NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"'
   git:
     check: "git --version"
     install:
@@ -38,21 +39,25 @@ steps:
     name: "Verify Git"
     type: tool_check
     tool: git
+    depends_on: ["verify-brew"]
 
   - id: verify-node
     name: "Verify Node.js"
     type: tool_check
     tool: node
+    depends_on: ["verify-brew"]
 
   - id: verify-go
     name: "Verify Go"
     type: tool_check
     tool: go
+    depends_on: ["verify-brew"]
 
   - id: verify-docker
     name: "Verify Docker"
     type: tool_check
     tool: docker
+    depends_on: ["verify-brew"]
 
   # ── Environment setup ──────────────────────────────────────────────
   - id: write-env
