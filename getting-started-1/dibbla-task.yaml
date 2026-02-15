@@ -105,15 +105,14 @@ steps:
   - id: run-backend
     name: "Start Go Backend"
     type: command
-    run: "PORT=8080 ./bin/server &"
+    mode: background
+    run: "PORT=8080 ./bin/server"
     depends_on: ["build-go"]
 
   - id: start-frontend-dev
     name: "Start Vite Dev Server"
     type: command
-    run:
-      darwin: "sleep 2 && open http://localhost:5173 & npm run dev"
-      linux: "sleep 2 && xdg-open http://localhost:5173 & npm run dev"
-      windows: "start http://localhost:5173 & npm run dev"
+    mode: terminal
+    run: "npm run dev"
     working_dir: "./frontend"
     depends_on: ["install-frontend-deps", "run-backend"]
