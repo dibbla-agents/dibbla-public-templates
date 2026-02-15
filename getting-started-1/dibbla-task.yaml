@@ -1,0 +1,85 @@
+version: "1"
+
+env:
+  ENV_HELLO_NAME:
+    description: "Name used by the /api/hello endpoint greeting"
+    default: "Dibbla"
+
+tools:
+  node:
+    check: "node --version"
+    install:
+      darwin: "brew install node"
+  go:
+    check: "go version"
+    install:
+      darwin: "brew install go"
+  docker:
+    check: "docker --version"
+    install:
+      darwin: "brew install --cask docker"
+
+steps:
+  # ── Tool verification ──────────────────────────────────────────────
+  - id: verify-node
+    name: "Verify Node.js"
+    type: tool_check
+    tool: node
+
+  - id: verify-go
+    name: "Verify Go"
+    type: tool_check
+    tool: go
+
+  - id: verify-docker
+    name: "Verify Docker"
+    type: tool_check
+    tool: docker
+
+  # ── Environment setup ──────────────────────────────────────────────
+  - id: write-env
+    name: "Write .env File"
+    type: write_env
+
+  # ── Frontend build ─────────────────────────────────────────────────
+  - id: install-frontend-deps
+    name: "Install Frontend Dependencies"
+    type: command
+    run: "npm ci"
+    working_dir: "./frontend"
+    depends_on: ["verify-node"]
+
+  - id: build-frontend
+    name: "Build Frontend"
+    type: command
+    run: "npm run build"
+    working_dir: "./frontend"
+    depends_on: ["install-frontend-deps"]
+
+  # ── Go build ───────────────────────────────────────────────────────
+  - id: go-mod-download
+    name: "Download Go Modules"
+    type: command
+    run: "go mod download"
+    depends_on: ["verify-go"]
+
+  - id: build-go
+    name: "Build Go Binary"
+    type: command
+    run: "CGO_ENABLED=0 go build -o ./bin/server main.go"
+    env:
+      CGO_ENABLED: "0"
+    depends_on: ["build-frontend", "go-mod-download", "write-env"]
+
+  # ── Docker ─────────────────────────────────────────────────────────
+  - id: docker-build
+    name: "Build Docker Image"
+    type: command
+    run: "docker build -t getting-started-1 ."
+    depends_on: ["verify-docker", "build-go"]
+
+  - id: docker-run
+    name: "Run Docker Container"
+    type: command
+    run: "docker rm -f getting-started-1 2>/dev/null; docker run -d -p 8080:80 --env-file .env --name getting-started-1 getting-started-1"
+    depends_on: ["docker-build"]
