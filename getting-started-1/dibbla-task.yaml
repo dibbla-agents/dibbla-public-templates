@@ -128,3 +128,9 @@ steps:
     run: "npm run dev"
     working_dir: "./frontend"
     depends_on: ["kill-port-5173"]
+
+  - id: open-browser
+    name: "Open App in Chrome"
+    type: command
+    run: "sleep 2 && open -a 'Google Chrome' http://localhost:5173"
+    depends_on: ["start-frontend-dev"]
