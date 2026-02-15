@@ -6,6 +6,10 @@ env:
     default: "Dibbla"
 
 tools:
+  git:
+    check: "git --version"
+    install:
+      darwin: "brew install git"
   node:
     check: "node --version"
     install:
@@ -21,6 +25,11 @@ tools:
 
 steps:
   # ── Tool verification ──────────────────────────────────────────────
+  - id: verify-git
+    name: "Verify Git"
+    type: tool_check
+    tool: git
+
   - id: verify-node
     name: "Verify Node.js"
     type: tool_check
