@@ -7,6 +7,7 @@ dist/
 
 # Go
 /server
+/bin/
 
 # IDE
 .vscode/
