@@ -96,17 +96,19 @@ steps:
     run: "docker build -t getting-started-1 ."
     depends_on: ["verify-docker", "build-go"]
 
-  - id: docker-run
-    name: "Run Docker Container"
+  # ── Dev servers ───────────────────────────────────────────────────
+  - id: run-backend
+    name: "Start Go Backend"
     type: command
-    run: "docker rm -f getting-started-1 2>/dev/null; docker run -d -p 8080:80 --env-file .env --name getting-started-1 getting-started-1"
-    depends_on: ["docker-build"]
+    run: "PORT=8080 ./bin/server &"
+    depends_on: ["build-go"]
 
-  - id: open-browser
-    name: "Open App in Browser"
+  - id: start-frontend-dev
+    name: "Start Vite Dev Server"
     type: command
     run:
-      darwin: "open http://localhost:8080"
-      linux: "xdg-open http://localhost:8080"
-      windows: "start http://localhost:8080"
-    depends_on: ["docker-run"]
+      darwin: "sleep 2 && open http://localhost:5173 & npm run dev"
+      linux: "sleep 2 && xdg-open http://localhost:5173 & npm run dev"
+      windows: "start http://localhost:5173 & npm run dev"
+    working_dir: "./frontend"
+    depends_on: ["install-frontend-deps", "run-backend"]
