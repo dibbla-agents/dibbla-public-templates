@@ -92,3 +92,12 @@ steps:
     type: command
     run: "docker rm -f getting-started-1 2>/dev/null; docker run -d -p 8080:80 --env-file .env --name getting-started-1 getting-started-1"
     depends_on: ["docker-build"]
+
+  - id: open-browser
+    name: "Open App in Browser"
+    type: command
+    run:
+      darwin: "open http://localhost:8080"
+      linux: "xdg-open http://localhost:8080"
+      windows: "start http://localhost:8080"
+    depends_on: ["docker-run"]
