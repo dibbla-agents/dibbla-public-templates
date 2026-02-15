@@ -102,12 +102,24 @@ steps:
     depends_on: ["verify-docker", "build-go"]
 
   # ── Dev servers ───────────────────────────────────────────────────
+  - id: kill-port-8080
+    name: "Kill Process on Port 8080"
+    type: command
+    run: "lsof -ti:8080 | xargs kill -9 2>/dev/null || true"
+    depends_on: ["build-go"]
+
   - id: run-backend
     name: "Start Go Backend"
     type: command
     mode: background
     run: "PORT=8080 ./bin/server"
-    depends_on: ["build-go"]
+    depends_on: ["kill-port-8080"]
+
+  - id: kill-port-5173
+    name: "Kill Process on Port 5173"
+    type: command
+    run: "lsof -ti:5173 | xargs kill -9 2>/dev/null || true"
+    depends_on: ["install-frontend-deps", "run-backend"]
 
   - id: start-frontend-dev
     name: "Start Vite Dev Server"
@@ -115,4 +127,4 @@ steps:
     mode: terminal
     run: "npm run dev"
     working_dir: "./frontend"
-    depends_on: ["install-frontend-deps", "run-backend"]
+    depends_on: ["kill-port-5173"]
