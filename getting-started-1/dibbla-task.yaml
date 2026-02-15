@@ -6,6 +6,10 @@ env:
     default: "Dibbla"
 
 tools:
+  brew:
+    check: "brew --version"
+    install:
+      darwin: '/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"'
   git:
     check: "git --version"
     install:
@@ -25,6 +29,11 @@ tools:
 
 steps:
   # ── Tool verification ──────────────────────────────────────────────
+  - id: verify-brew
+    name: "Verify Homebrew"
+    type: tool_check
+    tool: brew
+
   - id: verify-git
     name: "Verify Git"
     type: tool_check
