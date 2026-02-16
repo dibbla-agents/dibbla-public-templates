@@ -11,53 +11,68 @@ tools:
     privileged: true
     install:
       darwin: 'NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"'
+  winget:
+    check: "winget --version"
+    # Pre-installed on Windows 10 (1809+) / Windows 11 — no install needed.
   git:
     check: "git --version"
     install:
       darwin: "brew install git"
+      windows: "winget install --id Git.Git -e --accept-source-agreements --accept-package-agreements"
   node:
     check: "node --version"
     install:
       darwin: "brew install node"
+      windows: "winget install --id OpenJS.NodeJS.LTS -e --accept-source-agreements --accept-package-agreements"
   go:
     check: "go version"
     install:
       darwin: "brew install go"
+      windows: "winget install --id GoLang.Go -e --accept-source-agreements --accept-package-agreements"
   docker:
     check: "docker --version"
     install:
       darwin: "brew install --cask docker"
+      windows: "winget install --id Docker.DockerDesktop -e --accept-source-agreements --accept-package-agreements"
 
 steps:
-  # ── Tool verification ──────────────────────────────────────────────
+  # ── Package manager verification ───────────────────────────────────
   - id: verify-brew
     name: "Verify Homebrew"
     type: tool_check
     tool: brew
+    platforms: ["darwin"]
 
+  - id: verify-winget
+    name: "Verify winget"
+    type: tool_check
+    tool: winget
+    platforms: ["windows"]
+
+  # ── Tool verification ──────────────────────────────────────────────
   - id: verify-git
     name: "Verify Git"
     type: tool_check
     tool: git
-    depends_on: ["verify-brew"]
+    depends_on: ["verify-brew", "verify-winget"]
 
   - id: verify-node
     name: "Verify Node.js"
     type: tool_check
     tool: node
-    depends_on: ["verify-brew"]
+    depends_on: ["verify-brew", "verify-winget"]
 
   - id: verify-go
     name: "Verify Go"
     type: tool_check
     tool: go
-    depends_on: ["verify-brew"]
+    depends_on: ["verify-brew", "verify-winget"]
 
   - id: verify-docker
     name: "Verify Docker"
     type: tool_check
     tool: docker
-    depends_on: ["verify-brew"]
+    depends_on: ["verify-brew", "verify-winget"]
 
   # ── Environment setup ──────────────────────────────────────────────
   - id: write-env
@@ -89,7 +104,9 @@ steps:
   - id: build-go
     name: "Build Go Binary"
     type: command
-    run: "CGO_ENABLED=0 go build -o ./bin/server main.go"
+    run:
+      darwin: "go build -o ./bin/server main.go"
+      windows: "go build -o ./bin/server.exe main.go"
     env:
       CGO_ENABLED: "0"
     depends_on: ["build-frontend", "go-mod-download", "write-env"]
@@ -101,24 +118,36 @@ steps:
     run: "docker build -t getting-started-1 ."
     depends_on: ["verify-docker", "build-go"]
 
-  # ── Dev servers ───────────────────────────────────────────────────
+  # ── Dev servers ────────────────────────────────────────────────────
   - id: kill-port-8080
     name: "Kill Process on Port 8080"
     type: command
-    run: "lsof -ti:8080 | xargs kill -9 2>/dev/null || true"
+    run:
+      darwin: "lsof -ti:8080 | xargs kill -9 2>/dev/null || true"
+      windows: >-
+        for /f "tokens=5" %a in ('netstat -ano ^| findstr :8080 ^| findstr LISTENING')
+        do @taskkill /F /PID %a >nul 2>&1 & ver >nul
     depends_on: ["build-go"]
 
   - id: run-backend
     name: "Start Go Backend"
     type: command
     mode: background
-    run: "PORT=8080 ./bin/server"
+    run:
+      darwin: "./bin/server"
+      windows: ".\\bin\\server.exe"
+    env:
+      PORT: "8080"
     depends_on: ["kill-port-8080"]
 
   - id: kill-port-5173
     name: "Kill Process on Port 5173"
     type: command
-    run: "lsof -ti:5173 | xargs kill -9 2>/dev/null || true"
+    run:
+      darwin: "lsof -ti:5173 | xargs kill -9 2>/dev/null || true"
+      windows: >-
+        for /f "tokens=5" %a in ('netstat -ano ^| findstr :5173 ^| findstr LISTENING')
+        do @taskkill /F /PID %a >nul 2>&1 & ver >nul
     depends_on: ["install-frontend-deps", "run-backend"]
 
   - id: start-frontend-dev
@@ -130,7 +159,9 @@ steps:
     depends_on: ["kill-port-5173"]
 
   - id: open-browser
-    name: "Open App in Chrome"
+    name: "Open App in Browser"
     type: command
-    run: "sleep 2 && open -a 'Google Chrome' http://localhost:5173"
+    run:
+      darwin: "sleep 2 && open -a 'Google Chrome' http://localhost:5173"
+      windows: "timeout /T 2 /NOBREAK >nul && start http://localhost:5173"
     depends_on: ["start-frontend-dev"]
