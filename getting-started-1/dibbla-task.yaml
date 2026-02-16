@@ -29,11 +29,6 @@ tools:
     install:
       darwin: "brew install go"
       windows: "winget install --id GoLang.Go -e --accept-source-agreements --accept-package-agreements"
-  docker:
-    check: "docker --version"
-    install:
-      darwin: "brew install --cask docker"
-      windows: "winget install --id Docker.DockerDesktop -e --accept-source-agreements --accept-package-agreements"
 
 steps:
   # ── Package manager verification ───────────────────────────────────
@@ -68,11 +63,6 @@ steps:
     tool: go
     depends_on: ["verify-brew", "verify-winget"]
 
-  - id: verify-docker
-    name: "Verify Docker"
-    type: tool_check
-    tool: docker
-    depends_on: ["verify-brew", "verify-winget"]
 
   # ── Environment setup ──────────────────────────────────────────────
   - id: write-env
@@ -111,12 +101,6 @@ steps:
       CGO_ENABLED: "0"
     depends_on: ["build-frontend", "go-mod-download", "write-env"]
 
-  # ── Docker ─────────────────────────────────────────────────────────
-  - id: docker-build
-    name: "Build Docker Image"
-    type: command
-    run: "docker build -t getting-started-1 ."
-    depends_on: ["verify-docker", "build-go"]
 
   # ── Dev servers ────────────────────────────────────────────────────
   - id: kill-port-8080
