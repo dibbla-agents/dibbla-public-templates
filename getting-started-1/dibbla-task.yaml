@@ -125,8 +125,10 @@ steps:
     run:
       darwin: "lsof -ti:8080 | xargs kill -9 2>/dev/null || true"
       windows: >-
-        for /f "tokens=5" %a in ('netstat -ano ^| findstr :8080 ^| findstr LISTENING')
-        do @taskkill /F /PID %a >nul 2>&1 & ver >nul
+        powershell -NoProfile -Command
+        "Get-NetTCPConnection -LocalPort 8080 -ErrorAction SilentlyContinue |
+        ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue };
+        exit 0"
     depends_on: ["build-go"]
 
   - id: run-backend
@@ -146,8 +148,10 @@ steps:
     run:
       darwin: "lsof -ti:5173 | xargs kill -9 2>/dev/null || true"
       windows: >-
-        for /f "tokens=5" %a in ('netstat -ano ^| findstr :5173 ^| findstr LISTENING')
-        do @taskkill /F /PID %a >nul 2>&1 & ver >nul
+        powershell -NoProfile -Command
+        "Get-NetTCPConnection -LocalPort 5173 -ErrorAction SilentlyContinue |
+        ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue };
+        exit 0"
     depends_on: ["install-frontend-deps", "run-backend"]
 
   - id: start-frontend-dev
