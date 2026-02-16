@@ -167,5 +167,5 @@ steps:
     type: command
     run:
       darwin: "sleep 2 && open -a 'Google Chrome' http://localhost:5173"
-      windows: "timeout /T 2 /NOBREAK >nul && start http://localhost:5173"
+      windows: "ping -n 3 127.0.0.1 >nul && start http://localhost:5173"
     depends_on: ["start-frontend-dev"]
