@@ -4,6 +4,12 @@ env:
   ENV_HELLO_NAME:
     description: "Name used by the /api/hello endpoint greeting"
     default: "Dibbla"
+  DIBBLA_API_KEY:
+    description: "API key for the Dibbla API"
+    default: "test123"
+  DIBBLA_API_URL:
+    description: "API URL for the Dibbla API"
+    default: "https://depoy-api.dibbla.net"
 
 tools:
   brew:
@@ -29,6 +35,11 @@ tools:
     install:
       darwin: "brew install go"
       windows: "winget install --id GoLang.Go -e --accept-source-agreements --accept-package-agreements"
+  dibbla:
+    check: "dibbla --version"
+    install:
+      darwin: "brew tap dibbla-agents/tap && brew install dibbla"
+      windows: "irm https://install.dibbla.com/install.ps1 | iex"
 
 steps:
   # ── Package manager verification ───────────────────────────────────
@@ -61,6 +72,12 @@ steps:
     name: "Verify Go"
     type: tool_check
     tool: go
+    depends_on: ["verify-brew", "verify-winget"]
+
+  - id: verify-dibbla
+    name: "Verify Dibbla"
+    type: tool_check
+    tool: dibbla
     depends_on: ["verify-brew", "verify-winget"]
 
 
