@@ -4,12 +4,12 @@ env:
   ENV_HELLO_NAME:
     description: "Name used by the /api/hello endpoint greeting"
     default: "Dibbla"
-  DIBBLA_API_KEY:
+  DIBBLA_API_TOKEN:
     description: "API key for the Dibbla API"
     default: "test123"
-  DIBBLA_API_URL:
+  DIBBLA_API_URL: 
     description: "API URL for the Dibbla API"
-    default: "https://depoy-api.dibbla.net"
+    default: "https://deploy-api.dibbla.net"
 
 tools:
   brew:
