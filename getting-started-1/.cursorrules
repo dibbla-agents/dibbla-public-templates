@@ -25,6 +25,12 @@ This project is a Go Fiber backend with a React/TypeScript/Tailwind frontend. Th
 - **Static/SPA:** Keep the existing order: serve filesystem at `/`, then catch-all to `index.html` for client-side routing.
 - **APP.md:** Ensure `APP.md` exists in the repo and is kept up-to-date with the latest description of what the app does. It is used as the app store page for the app; update it whenever features or purpose change.
 
+## Frontend architecture — avoid large inline blobs
+
+- **SVGs & logos:** Keep large SVG assets in their own files under `frontend/src/components/` (e.g. `DibblaLogo.tsx`) or `frontend/src/assets/` (e.g. `logo.svg`). Import them — never paste multi-hundred-line SVG paths inline into page components.
+- **Reusable layout shell:** The background scaffolding (grid pattern, blur accents, scrollbar styles in `index.css`) is shared across pages. When rebuilding a page, only replace the *content* inside the `z-10` container — don't regenerate the backdrop boilerplate.
+- **Dibbla DB connection string:** The format is `postgres://<DB_CONNECTION>/<db_name>?sslmode=require` where `DB_CONNECTION` comes from `dibbla secrets get DB_CONNECTION`. No need to manually assemble — just slot the secret and DB name into this template.
+
 ## Workflow
 
 - **Local run:** `cd frontend && npm install && npm run build && cd ..` then `go run main.go` (or use Dibbla task).
