@@ -1,0 +1,172 @@
+version: "1"
+
+env:
+  ENV_HELLO_NAME:
+    description: "Name used by the /api/hello endpoint greeting"
+    default: "Dibbla"
+  DIBBLA_API_TOKEN:
+    description: "API key for the Dibbla API"
+    default: "test123"
+  DIBBLA_API_URL: 
+    description: "API URL for the Dibbla API"
+    default: "https://deploy-api.dibbla.net"
+
+tools:
+  brew:
+    check: "brew --version"
+    privileged: true
+    install:
+      darwin: 'NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"'
+  winget:
+    check: "winget --version"
+    # Pre-installed on Windows 10 (1809+) / Windows 11 — no install needed.
+  git:
+    check: "git --version"
+    install:
+      darwin: "brew install git"
+      windows: "winget install --id Git.Git -e --accept-source-agreements --accept-package-agreements"
+  node:
+    check: "node --version"
+    install:
+      darwin: "brew install node"
+      windows: "winget install --id OpenJS.NodeJS.LTS -e --accept-source-agreements --accept-package-agreements"
+  go:
+    check: "go version"
+    install:
+      darwin: "brew install go"
+      windows: "winget install --id GoLang.Go -e --accept-source-agreements --accept-package-agreements"
+  dibbla:
+    check: "dibbla --version"
+    install:
+      darwin: "brew tap dibbla-agents/tap && brew install dibbla"
+      windows: "irm https://install.dibbla.com/install.ps1 | iex"
+
+steps:
+  # ── Package manager verification ───────────────────────────────────
+  - id: verify-brew
+    name: "Verify Homebrew"
+    type: tool_check
+    tool: brew
+    platforms: ["darwin"]
+
+  - id: verify-winget
+    name: "Verify winget"
+    type: tool_check
+    tool: winget
+    platforms: ["windows"]
+
+  # ── Tool verification ──────────────────────────────────────────────
+  - id: verify-git
+    name: "Verify Git"
+    type: tool_check
+    tool: git
+    depends_on: ["verify-brew", "verify-winget"]
+
+  - id: verify-node
+    name: "Verify Node.js"
+    type: tool_check
+    tool: node
+    depends_on: ["verify-brew", "verify-winget"]
+
+  - id: verify-go
+    name: "Verify Go"
+    type: tool_check
+    tool: go
+    depends_on: ["verify-brew", "verify-winget"]
+
+  - id: verify-dibbla
+    name: "Verify Dibbla"
+    type: tool_check
+    tool: dibbla
+    depends_on: ["verify-brew", "verify-winget"]
+
+
+  # ── Environment setup ──────────────────────────────────────────────
+  - id: write-env
+    name: "Write .env File"
+    type: write_env
+
+  # ── Frontend build ─────────────────────────────────────────────────
+  - id: install-frontend-deps
+    name: "Install Frontend Dependencies"
+    type: command
+    run: "npm ci"
+    working_dir: "./frontend"
+    depends_on: ["verify-node"]
+
+  - id: build-frontend
+    name: "Build Frontend"
+    type: command
+    run: "npm run build"
+    working_dir: "./frontend"
+    depends_on: ["install-frontend-deps"]
+
+  # ── Go build ───────────────────────────────────────────────────────
+  - id: go-mod-download
+    name: "Download Go Modules"
+    type: command
+    run: "go mod download"
+    depends_on: ["verify-go"]
+
+  - id: build-go
+    name: "Build Go Binary"
+    type: command
+    run:
+      darwin: "go build -o ./bin/server main.go"
+      windows: "go build -o ./bin/server.exe main.go"
+    env:
+      CGO_ENABLED: "0"
+    depends_on: ["build-frontend", "go-mod-download", "write-env"]
+
+
+  # ── Dev servers ────────────────────────────────────────────────────
+  - id: kill-port-8080
+    name: "Kill Process on Port 8080"
+    type: command
+    run:
+      darwin: "lsof -ti:8080 | xargs kill -9 2>/dev/null || true"
+      windows: >-
+        powershell -NoProfile -Command
+        "Get-NetTCPConnection -LocalPort 8080 -ErrorAction SilentlyContinue |
+        ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue };
+        exit 0"
+    depends_on: ["build-go"]
+
+  - id: run-backend
+    name: "Start Go Backend"
+    type: command
+    mode: background
+    run:
+      darwin: "./bin/server"
+      windows: ".\\bin\\server.exe"
+    env:
+      PORT: "8080"
+    depends_on: ["kill-port-8080"]
+
+  - id: kill-port-5173
+    name: "Kill Process on Port 5173"
+    type: command
+    run:
+      darwin: "lsof -ti:5173 | xargs kill -9 2>/dev/null || true"
+      windows: >-
+        powershell -NoProfile -Command
+        "Get-NetTCPConnection -LocalPort 5173 -ErrorAction SilentlyContinue |
+        ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue };
+        exit 0"
+    depends_on: ["install-frontend-deps", "run-backend"]
+
+  - id: start-frontend-dev
+    name: "Start Vite Dev Server"
+    type: command
+    mode: terminal
+    run: "npm run dev"
+    working_dir: "./frontend"
+    depends_on: ["kill-port-5173"]
+
+  - id: open-browser
+    name: "Open App in Browser"
+    type: command
+    run:
+      darwin: "sleep 2 && open -a 'Google Chrome' http://localhost:5173"
+      windows: "ping -n 3 127.0.0.1 >nul && start http://localhost:5173"
+    depends_on: ["start-frontend-dev"]
