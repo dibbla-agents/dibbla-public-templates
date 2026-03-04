@@ -6,7 +6,7 @@ Complete usage, arguments, and flags for `deploy`, `apps`, `db`, and `secrets`.
 
 ## deploy
 
-Deploy a containerized app from a directory. App URL: `https://<alias>.dibbla.app`.
+Deploy a containerized app from a directory. App URL: `https://<alias>.dibbla.net`.
 
 | Item | Details |
 |------|---------|
