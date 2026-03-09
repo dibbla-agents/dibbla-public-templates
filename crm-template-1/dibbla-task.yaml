@@ -9,7 +9,7 @@ env:
     default: "test123"
   DIBBLA_API_URL: 
     description: "API URL for the Dibbla API"
-    default: "https://deploy-api.dibbla.net"
+    default: "https://deploy-api.dibbla.app"
 
 tools:
   brew:
