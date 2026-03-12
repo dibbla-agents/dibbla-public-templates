@@ -1,14 +1,25 @@
 import { useEffect, useState } from "react";
 import { DibblaLogo } from "./components/DibblaLogo";
 import { Confetti } from "./components/Confetti";
+import cursorChatImg from "./assets/cursor_chat.png";
 
 const SAMPLE_PROMPT =
   "Change this page into a personal portfolio site with my name, a short bio, and links to my social media profiles.";
+
+type Editor = "cursor" | "claude-code" | "windsurf" | "opencode";
+
+const EDITORS: { id: Editor; label: string }[] = [
+  { id: "cursor", label: "Cursor" },
+  { id: "claude-code", label: "Claude Code" },
+  { id: "windsurf", label: "Windsurf" },
+  { id: "opencode", label: "OpenCode" },
+];
 
 function App() {
   const [greeting, setGreeting] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [editor, setEditor] = useState<Editor>("cursor");
 
   function copyPrompt() {
     navigator.clipboard.writeText(SAMPLE_PROMPT).then(() => {
@@ -58,7 +69,24 @@ function App() {
         </p>
 
         {greeting && (
-          <div className="w-full max-w-2xl grid grid-cols-1 md:grid-cols-3 gap-4">
+          <>
+          <div className="flex items-center gap-2 mb-6">
+            {EDITORS.map((e) => (
+              <button
+                key={e.id}
+                onClick={() => setEditor(e.id)}
+                className={`px-4 py-2 rounded-full text-sm font-semibold transition-all duration-150 cursor-pointer ${
+                  editor === e.id
+                    ? "bg-dibbla-green text-dibbla-dark"
+                    : "bg-white/5 text-white/50 hover:bg-white/10 hover:text-white/70"
+                }`}
+              >
+                {e.label}
+              </button>
+            ))}
+          </div>
+
+          <div className="w-full max-w-5xl grid grid-cols-1 md:grid-cols-3 gap-4">
             {/* Step 1 */}
             <div className="rounded-xl bg-dibbla-green/10 border-2 border-dibbla-green/40 p-5 flex flex-col">
               <div className="flex items-center gap-3 mb-3">
@@ -94,33 +122,54 @@ function App() {
             <div className="rounded-xl bg-white/5 border border-white/10 p-5 flex flex-col">
               <div className="flex items-center gap-3 mb-3">
                 <span className="flex-shrink-0 w-8 h-8 rounded-full bg-dibbla-green text-dibbla-dark font-bold text-base flex items-center justify-center">2</span>
-                <p className="text-white text-base font-semibold">Open your AI App Builder</p>
+                <p className="text-white text-base font-semibold">
+                  Open {EDITORS.find((e) => e.id === editor)!.label}
+                </p>
               </div>
               <p className="text-white/40 text-sm leading-relaxed mb-4 flex-1">
-                Cursor, Claude Code, OpenCode, or any AI coding tool you prefer.
+                {editor === "cursor" || editor === "windsurf"
+                  ? "Click the button below to open the project directly."
+                  : editor === "opencode"
+                    ? "Open the desktop app, or run this in your terminal."
+                    : "Run this command in your terminal to get started."}
               </p>
-              <a
-                href={`cursor://file${__PROJECT_PATH__}`}
-                className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-white/10 border border-white/20 text-white font-semibold text-sm transition-all duration-200 hover:bg-white/15"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
-                </svg>
-                Open in Cursor
-              </a>
+              {editor === "cursor" || editor === "windsurf" ? (
+                <a
+                  href={`${editor === "cursor" ? "cursor" : "windsurf"}://file${__PROJECT_PATH__}`}
+                  className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-white/10 border border-white/20 text-white font-semibold text-sm transition-all duration-200 hover:bg-white/15"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+                  </svg>
+                  Open in {EDITORS.find((e) => e.id === editor)!.label}
+                </a>
+              ) : (
+                <code className="block w-full px-4 py-2.5 rounded-lg bg-white/10 border border-white/20 text-white/80 text-sm text-center font-mono">
+                  cd {__PROJECT_PATH__} && {editor === "claude-code" ? "claude" : "opencode"}
+                </code>
+              )}
             </div>
 
             {/* Step 3 */}
             <div className="rounded-xl bg-white/5 border border-white/10 p-5 flex flex-col">
               <div className="flex items-center gap-3 mb-3">
                 <span className="flex-shrink-0 w-8 h-8 rounded-full bg-dibbla-green text-dibbla-dark font-bold text-base flex items-center justify-center">3</span>
-                <p className="text-white text-base font-semibold">Paste the prompt into the chat</p>
+                <p className="text-white text-base font-semibold">Paste into the chat</p>
               </div>
-              <p className="text-white/40 text-sm leading-relaxed flex-1">
-                The AI will transform this app based on your prompt. Watch the magic happen!
-              </p>
+              {editor === "cursor" ? (
+                <img
+                  src={cursorChatImg}
+                  alt="Prompt pasted into Cursor chat"
+                  className="rounded-lg border border-white/10 w-full flex-1 object-cover object-top"
+                />
+              ) : (
+                <p className="text-white/40 text-sm leading-relaxed flex-1">
+                  Open the chat in {EDITORS.find((e) => e.id === editor)!.label}, paste the prompt, and hit enter. The AI will start transforming your app.
+                </p>
+              )}
             </div>
           </div>
+          </>
         )}
       </div>
 
