@@ -154,7 +154,7 @@ function App() {
             <div className="rounded-xl bg-white/5 border border-white/10 p-5 flex flex-col">
               <div className="flex items-center gap-3 mb-3">
                 <span className="flex-shrink-0 w-8 h-8 rounded-full bg-dibbla-green text-dibbla-dark font-bold text-base flex items-center justify-center">3</span>
-                <p className="text-white text-base font-semibold">Paste into the chat</p>
+                <p className="text-white text-base font-semibold">Paste into the {EDITORS.find((e) => e.id === editor)!.label} chat</p>
               </div>
               {editor === "cursor" ? (
                 <img
