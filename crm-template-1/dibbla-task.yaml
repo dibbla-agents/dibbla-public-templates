@@ -143,14 +143,14 @@ steps:
       PORT: "8080"
     depends_on: ["kill-port-8080"]
 
-  - id: kill-port-5173
-    name: "Kill Process on Port 5173"
+  - id: kill-port-5175
+    name: "Kill Process on Port 5175"
     type: command
     run:
-      darwin: "lsof -ti:5173 | xargs kill -9 2>/dev/null || true"
+      darwin: "lsof -ti:5175 | xargs kill -9 2>/dev/null || true"
       windows: >-
         powershell -NoProfile -Command
-        "Get-NetTCPConnection -LocalPort 5173 -ErrorAction SilentlyContinue |
+        "Get-NetTCPConnection -LocalPort 5175 -ErrorAction SilentlyContinue |
         ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue };
         exit 0"
     depends_on: ["install-frontend-deps", "run-backend"]
@@ -161,12 +161,12 @@ steps:
     mode: terminal
     run: "npm run dev"
     working_dir: "./frontend"
-    depends_on: ["kill-port-5173"]
+    depends_on: ["kill-port-5175"]
 
   - id: open-browser
     name: "Open App in Browser"
     type: command
     run:
-      darwin: "sleep 2 && open -a 'Google Chrome' http://localhost:5173"
-      windows: "ping -n 3 127.0.0.1 >nul && start http://localhost:5173"
+      darwin: "sleep 2 && open -a 'Google Chrome' http://localhost:5175"
+      windows: "ping -n 3 127.0.0.1 >nul && start http://localhost:5175"
     depends_on: ["start-frontend-dev"]
