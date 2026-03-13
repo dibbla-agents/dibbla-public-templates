@@ -163,10 +163,18 @@ steps:
     working_dir: "./frontend"
     depends_on: ["kill-port-5175"]
 
+  - id: wait-for-vite
+    name: "Wait for Vite Dev Server"
+    type: command
+    run:
+      darwin: "for i in $(seq 1 15); do curl -s http://localhost:5175 >/dev/null 2>&1 && exit 0; sleep 1; done; echo 'Vite dev server did not start within 15s' >&2; exit 1"
+      windows: "powershell -NoProfile -Command \"for ($i=0; $i -lt 15; $i++) { try { Invoke-WebRequest -Uri http://localhost:5175 -UseBasicParsing -TimeoutSec 1 | Out-Null; exit 0 } catch {} Start-Sleep 1 }; Write-Error 'Vite dev server did not start within 15s'; exit 1\""
+    depends_on: ["start-frontend-dev"]
+
   - id: open-browser
     name: "Open App in Browser"
     type: command
     run:
-      darwin: "sleep 2 && open -a 'Google Chrome' http://localhost:5175"
-      windows: "ping -n 3 127.0.0.1 >nul && start http://localhost:5175"
-    depends_on: ["start-frontend-dev"]
+      darwin: "open -a 'Google Chrome' http://localhost:5175"
+      windows: "start http://localhost:5175"
+    depends_on: ["wait-for-vite"]
