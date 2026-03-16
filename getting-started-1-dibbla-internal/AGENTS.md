@@ -60,6 +60,157 @@ Use the **Dibbla CLI** (`dibbla`) to deploy apps, manage applications, databases
 
 ---
 
+## Workflow architecture
+
+Workflows are directed graphs of **nodes** connected by **edges**. When a workflow has `api` + `api_response` nodes, it gets an HTTP API at `POST https://workflow-server.dibbla.net/api/execute/<name>/<id>`.
+
+### Node types
+
+| Type | Purpose | Key fields |
+|------|---------|------------|
+| `api` | HTTP entry point | `inputs` (list of API field names), `outputs` (same names) |
+| `api_response` | HTTP return point | `inputs` (list of response fields), `linked_to` (the `api` node's id) |
+| `function` | Processing node | `function`, `server`, `inputs` (key-value map), `outputs` (list), optionally `tools` (list of tool node IDs) and `label` |
+
+### Agent functions (function-server)
+
+| Function | When to use |
+|----------|-------------|
+| `reasoning_agent_function` | Default choice. Basic agent: system_message + prompt_message + model. Supports tools. |
+| `reasoning_agent_with_thread` | Need conversation memory across calls (adds thread_id). |
+| `reasoning_agent_with_toolbox` | Memory + dynamic tool resolution by name (adds thread_id + toolbox_tools). |
+| `structured_output_agent` | Need typed JSON fields beyond just `response` (adds structured_output JSON Schema). |
+| `reasoning_with_messages` | Takes a full chat_messages array instead of system+prompt. |
+| `simple_openai_agent` | Fine-grained OpenAI control (temperature, max_tokens, top_p, penalties). |
+| All `_no_cache` variants | Same as base but skip response caching (for live/fresh data). |
+
+### Utility functions (function-server)
+
+| Function | Purpose |
+|----------|---------|
+| `handlebars_template` | Build dynamic prompts via `{{this.var}}` templates from multiple inputs. |
+| `call_http_api` | Make HTTP requests (url, method, headers, body → output). Use as agent tool. |
+| `input` | Pass-through: holds a static text value. |
+| `static_output` | Always returns a fixed value regardless of input. |
+| `divider` | Splits text at a divider string into above/below. |
+| `todays_date` | Returns current date and time. |
+| `get_weather_function` | Weather lookup by location name. |
+
+### Supported models
+
+- **Claude:** claude-haiku-4-5, claude-sonnet-4-0/4-5/4-6, claude-opus-4-0/4-1/4-5/4-6
+- **Gemini:** gemini-1.5-flash, gemini-1.5-pro, gemini-2.0-flash, gemini-2.5-flash, gemini-2.5-pro
+- **OpenAI:** gpt-4o, gpt-4o-mini, gpt-4.1/mini/nano, gpt-4.5-preview, gpt-5/mini/nano, gpt-5.1/codex, o1/mini, o3/mini/pro, o4-mini
+
+### Edge format
+
+```
+source_node_id.output_port -> target_node_id.input_port
+```
+
+Nested outputs: `node.output.subfield -> target.input`. Array fields: `node.items[] -> target.items[]`.
+
+### How tools work
+
+1. Declare the tool as a separate `function` node in the workflow.
+2. List the tool node's **id** in the agent node's `tools` array.
+3. The agent autonomously decides when to call the tool during execution.
+
+### Quick-start: minimal workflow YAML
+
+```yaml
+name: my_agent
+label: My Agent
+description: Answers questions
+
+nodes:
+  - id: api_input
+    type: api
+    inputs: [question]
+    outputs: [question]
+
+  - id: agent
+    type: function
+    function: reasoning_agent_function
+    server: function-server
+    inputs:
+      model: claude-sonnet-4-6
+      system_message: "You are a helpful assistant."
+      prompt_message: null
+    outputs: [response]
+
+  - id: api_response
+    type: api_response
+    inputs: [response]
+    linked_to: api_input
+
+edges:
+  - api_input.question -> agent.prompt_message
+  - agent.response -> api_response.response
+```
+
+Create it: `dibbla workflows validate -f agent.yaml && dibbla workflows create -f agent.yaml`
+
+### Adding tools to a workflow YAML
+
+Add the tool function as a node, then reference its node ID in the agent's `tools`:
+
+```yaml
+  - id: agent
+    type: function
+    function: reasoning_agent_function
+    server: function-server
+    inputs:
+      model: claude-sonnet-4-6
+      system_message: "Use the weather tool when asked about weather."
+      prompt_message: null
+    outputs: [response]
+    tools:
+      - weather_tool       # references the node id below
+
+  - id: weather_tool
+    type: function
+    function: get_weather_function
+    server: function-server
+    inputs:
+      query: null
+      search_query: null
+    outputs: [temperature, weather_description, location_name, country, administrations, error]
+```
+
+### Using handlebars templates for dynamic prompts
+
+```yaml
+  - id: prompt_builder
+    type: function
+    function: handlebars_template
+    server: function-server
+    inputs:
+      language: null
+      context: null
+      script: |
+        Translate the input to {{this.language}}.
+        Glossary: {{this.context}}
+    outputs: [output]
+```
+
+Wire: `api_input.language -> prompt_builder.language`, `prompt_builder.output -> agent.system_message`.
+
+### Using HTTP calls as agent tools
+
+```yaml
+  - id: http_tool
+    type: function
+    function: call_http_api
+    server: function-server
+    inputs: { url: null, method: null, headers: null, body: null }
+    outputs: [output]
+```
+
+Then add `http_tool` to the agent's `tools` list and instruct the agent in its system_message how to call specific APIs (URL, method, headers, body format).
+
+---
+
 ## Scripting
 
 - Use `-y` / `--yes` for non-interactive: `apps delete`, `db delete`, `secrets delete`, `workflows delete`, `nodes remove`
@@ -72,5 +223,6 @@ Use the **Dibbla CLI** (`dibbla`) to deploy apps, manage applications, databases
 
 - **Syntax and flags:** [.claude/skills/dibbla/reference.md](.claude/skills/dibbla/reference.md)
 - **Copy-paste examples:** [.claude/skills/dibbla/examples.md](.claude/skills/dibbla/examples.md)
+- **Workflow architecture & patterns:** [.claude/skills/dibbla/workflows.md](.claude/skills/dibbla/workflows.md)
 
-When suggesting or generating `dibbla` commands, use the reference for exact syntax and the examples for typical workflows.
+When suggesting or generating `dibbla` commands, use the reference for exact syntax, the examples for typical patterns, and the workflows guide for building or modifying workflow definitions.

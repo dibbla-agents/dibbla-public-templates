@@ -27,5 +27,6 @@ The `dibbla` CLI scaffolds projects and manages **applications**, **databases**,
 
 - **Full command and flag reference:** see [reference.md](reference.md) for usage, arguments, and all flags.
 - **Usage examples:** see [examples.md](examples.md) for copy-paste examples and scripting patterns.
+- **Workflow architecture deep dive:** see [workflows.md](workflows.md) for node types, function catalog, edge wiring, and common patterns.
 
-When suggesting or generating `dibbla` commands, use the reference for exact syntax and the examples for typical workflows.
+When suggesting or generating `dibbla` commands, use the reference for exact syntax, the examples for typical workflows, and the workflows guide for building/modifying workflow definitions.
