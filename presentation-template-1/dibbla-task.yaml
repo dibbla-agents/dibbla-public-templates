@@ -1,0 +1,93 @@
+version: "1"
+
+tools:
+  brew:
+    check: "brew --version"
+    privileged: true
+    install:
+      darwin: 'NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"'
+  winget:
+    check: "winget --version"
+    # Pre-installed on Windows 10 (1809+) / Windows 11 — no install needed.
+  git:
+    check: "git --version"
+    install:
+      darwin: "brew install git"
+      windows: "winget install --id Git.Git -e --accept-source-agreements --accept-package-agreements"
+  node:
+    check: "node --version"
+    install:
+      darwin: "brew install node"
+      windows: "winget install --id OpenJS.NodeJS.LTS -e --accept-source-agreements --accept-package-agreements"
+  dibbla:
+    check: "dibbla --version"
+    install:
+      darwin: "brew tap dibbla-agents/tap && brew install dibbla"
+      windows: "irm https://install.dibbla.com/install.ps1 | iex"
+
+steps:
+  # ── Package manager verification ───────────────────────────────────
+  - id: verify-brew
+    name: "Verify Homebrew"
+    type: tool_check
+    tool: brew
+    platforms: ["darwin"]
+
+  - id: verify-winget
+    name: "Verify winget"
+    type: tool_check
+    tool: winget
+    platforms: ["windows"]
+
+  # ── Tool verification ──────────────────────────────────────────────
+  - id: verify-git
+    name: "Verify Git"
+    type: tool_check
+    tool: git
+    depends_on: ["verify-brew", "verify-winget"]
+
+  - id: verify-node
+    name: "Verify Node.js"
+    type: tool_check
+    tool: node
+    depends_on: ["verify-brew", "verify-winget"]
+
+  - id: verify-dibbla
+    name: "Verify Dibbla CLI"
+    type: tool_check
+    tool: dibbla
+    depends_on: ["verify-brew", "verify-winget"]
+
+  # ── Install dependencies ───────────────────────────────────────────
+  - id: npm-install
+    name: "Install Dependencies"
+    type: command
+    run: "npm ci"
+    depends_on: ["verify-node"]
+
+  # ── Build ──────────────────────────────────────────────────────────
+  - id: npm-build
+    name: "Build Presentation"
+    type: command
+    run: "npm run build"
+    depends_on: ["npm-install"]
+
+  # ── Dev server ─────────────────────────────────────────────────────
+  - id: kill-port-5173
+    name: "Kill Process on Port 5173"
+    type: command
+    run:
+      darwin: "lsof -ti:5173 | xargs kill -9 2>/dev/null || true"
+      windows: >-
+        powershell -NoProfile -Command
+        "Get-NetTCPConnection -LocalPort 5173 -ErrorAction SilentlyContinue |
+        ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue };
+        exit 0"
+    depends_on: ["npm-install"]
+
+  - id: start-dev-server
+    name: "Start Vite Dev Server"
+    type: command
+    mode: background
+    run: "npm run dev"
+    depends_on: ["kill-port-5173"]
