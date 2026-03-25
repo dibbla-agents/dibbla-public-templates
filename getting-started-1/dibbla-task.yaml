@@ -75,12 +75,21 @@ steps:
     depends_on: ["verify-brew", "verify-winget"]
 
 
+  # ── Dibbla update ─────────────────────────────────────────────────
+  - id: update-dibbla
+    name: "Update Dibbla CLI"
+    type: command
+    run:
+      darwin: "brew upgrade dibbla 2>/dev/null || true"
+      windows: "irm https://install.dibbla.com/install.ps1 | iex"
+    depends_on: ["verify-dibbla"]
+
   # ── Dibbla login ──────────────────────────────────────────────────
   - id: dibbla-login
     name: "Login to Dibbla"
     type: command
     run: "dibbla apps list > /dev/null 2>&1 || dibbla login --api-key=$DIBBLA_API_TOKEN"
-    depends_on: ["verify-dibbla"]
+    depends_on: ["update-dibbla"]
 
   # ── Environment setup ──────────────────────────────────────────────
   - id: write-env
