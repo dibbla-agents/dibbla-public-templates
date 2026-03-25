@@ -2,7 +2,6 @@ package main
 
 import (
 	"embed"
-	"fmt"
 	"io/fs"
 	"log"
 	"net/http"
@@ -21,12 +20,6 @@ func main() {
 	// Load .env file if present (ignore error — in production env vars are set directly)
 	_ = godotenv.Load()
 
-	// Require ENV_HELLO_NAME — fail fast if not set
-	helloName := os.Getenv("ENV_HELLO_NAME")
-	if helloName == "" {
-		log.Fatal("ENV_HELLO_NAME is required but not set. Please set it in .env or as an environment variable.")
-	}
-
 	app := fiber.New(fiber.Config{
 		DisableStartupMessage: false,
 	})
@@ -36,7 +29,7 @@ func main() {
 
 	// API routes
 	app.Get("/api/hello", func(c *fiber.Ctx) error {
-		return c.JSON(fiber.Map{"message": fmt.Sprintf("Hello World %s", helloName)})
+		return c.JSON(fiber.Map{"message": "Hello World Dibbla"})
 	})
 
 	// Strip the "dist" prefix so files are served from root

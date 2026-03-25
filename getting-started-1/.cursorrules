@@ -19,7 +19,7 @@ This project is a Go Fiber backend with a React/TypeScript/Tailwind frontend. Th
 
 ## Conventions
 
-- **Go:** Uses `godotenv` for optional `.env`. `ENV_HELLO_NAME` is required; `PORT` defaults to 80 (8080 in dev).
+- **Go:** Uses `godotenv` for optional `.env`. `PORT` defaults to 80 (8080 in dev).
 - **API:** REST under `/api/` (e.g. `GET /api/hello`). Add new routes in `main.go` before the static/filesystem middleware.
 - **Frontend:** Use Tailwind v4 with `@theme` in `frontend/src/index.css`. Prefer design tokens: `dibbla-green`, `dibbla-dark`, `dibbla-card`.
 - **Static/SPA:** Keep the existing order: serve filesystem at `/`, then catch-all to `index.html` for client-side routing.
@@ -55,7 +55,7 @@ If the user asks to add a database:
 When the user asks to deploy, use the **Dibbla CLI skill** (see `.claude/skills/dibbla/SKILL.md`):
 
 - Deploy with `dibbla deploy .` (no `--yes` needed). Use `--force` to overwrite an existing deployment with the same alias.
-- Pass env vars from `.env` using `--env VAR=val` for each variable the app needs (e.g. `ENV_HELLO_NAME`, `DATABASE_URL`). Source `.env` then pass: `-e "VAR=$VAR"`.
+- Pass env vars from `.env` using `--env VAR=val` for each variable the app needs (e.g. `DATABASE_URL`). Source `.env` then pass: `-e "VAR=$VAR"`.
 - If the app listens on a port other than 80, set it with `--port <port>` (match the port in the Dockerfile).
 - For updates to an existing deployment, use `dibbla update`; run `dibbla --skill-prompt` for full options.
 

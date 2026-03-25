@@ -1,10 +1,5 @@
 version: "1"
 
-env:
-  ENV_HELLO_NAME:
-    description: "Name used by the /api/hello endpoint greeting"
-    default: "Dibbla"
-
 tools:
   brew:
     check: "brew --version"
@@ -91,11 +86,6 @@ steps:
     run: "dibbla apps list > /dev/null 2>&1 || dibbla login --api-key=$DIBBLA_API_TOKEN"
     depends_on: ["update-dibbla"]
 
-  # ── Environment setup ──────────────────────────────────────────────
-  - id: write-env
-    name: "Write .env File"
-    type: write_env
-
   # ── Frontend build ─────────────────────────────────────────────────
   - id: install-frontend-deps
     name: "Install Frontend Dependencies"
@@ -126,7 +116,7 @@ steps:
       windows: "go build -o ./bin/server.exe main.go"
     env:
       CGO_ENABLED: "0"
-    depends_on: ["build-frontend", "go-mod-download", "write-env"]
+    depends_on: ["build-frontend", "go-mod-download"]
 
 
   # ── Dev servers ────────────────────────────────────────────────────
