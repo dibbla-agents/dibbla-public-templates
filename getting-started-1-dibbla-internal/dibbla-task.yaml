@@ -4,12 +4,6 @@ env:
   ENV_HELLO_NAME:
     description: "Name used by the /api/hello endpoint greeting"
     default: "Dibbla"
-  DIBBLA_API_TOKEN:
-    description: "API key for the Dibbla API"
-    default: "ak_6351a8a21570c88b0503186c347ffa972d033725778d10717f0328432475d9ad"
-  DIBBLA_API_URL: 
-    description: "API URL for the Dibbla API"
-    default: "https://api.dibbla.net"
 
 tools:
   brew:
@@ -80,6 +74,22 @@ steps:
     tool: dibbla
     depends_on: ["verify-brew", "verify-winget"]
 
+
+  # ── Dibbla update ─────────────────────────────────────────────────
+  - id: update-dibbla
+    name: "Update Dibbla CLI"
+    type: command
+    run:
+      darwin: "brew upgrade dibbla 2>/dev/null || true"
+      windows: "irm https://install.dibbla.com/install.ps1 | iex"
+    depends_on: ["verify-dibbla"]
+
+  # ── Dibbla login ──────────────────────────────────────────────────
+  - id: dibbla-login
+    name: "Login to Dibbla"
+    type: command
+    run: "dibbla apps list > /dev/null 2>&1 || dibbla login --api-key=$DIBBLA_API_TOKEN"
+    depends_on: ["update-dibbla"]
 
   # ── Environment setup ──────────────────────────────────────────────
   - id: write-env

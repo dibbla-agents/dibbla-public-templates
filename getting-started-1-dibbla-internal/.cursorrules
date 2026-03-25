@@ -62,7 +62,6 @@ When the user asks about deployment, use the **Dibbla CLI skill** (see `.claude/
 - **Dockerfile must include all Go packages:** Copy every package the app needs (e.g. `COPY db/ ./db/`). Build the module with `go build .`, not `go build main.go`, so imports like `getting-started-1/db` resolve.
 - **Go version alignment:** The Go version in `go.mod` and the Docker image (e.g. `golang:1.24-alpine`) must satisfy all dependencies. If the build fails with "requires go >= 1.24.0", use Go 1.24 in both; do not mix `go 1.23` with images or vendor trees that require 1.24.
 - **Dibbla builder:** Prefer `go mod download` in the Dockerfile (with `ENV GOPROXY=https://proxy.golang.org,direct`) over `-mod=vendor`. Vendored builds can fail on Dibbla when vendor/modules.txt has a higher Go requirement than the image.
-- **Dibbla API URL:** Ensure `.env` uses `DIBBLA_API_URL=https://deploy-api.dibbla.net` (not `depoy-api`). Wrong URL causes "no such host" and deploy failures.
 - **Local Vite proxy:** The frontend proxies `/api` to `http://127.0.0.1:8080`. Start the backend with `PORT=8080 go run main.go` so the proxy works; otherwise you get "http proxy error: /api/...".
 
 ## Maintaining rules and skills
