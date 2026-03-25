@@ -4,7 +4,7 @@ import { Confetti } from "./components/Confetti";
 import cursorChatImg from "./assets/cursor_chat.png";
 
 const SAMPLE_PROMPT =
-  "Change this page into a personal portfolio site with my name, a short bio, and links to my social media profiles.";
+  "Turn this into a personal portfolio page with a bio and project list. Use Dibbla to make it public on the internet.";
 
 type Editor = "cursor" | "claude-code" | "windsurf" | "opencode";
 
