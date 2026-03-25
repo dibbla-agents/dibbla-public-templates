@@ -4,12 +4,6 @@ env:
   ENV_HELLO_NAME:
     description: "Name used by the /api/hello endpoint greeting"
     default: "Dibbla"
-  DIBBLA_API_TOKEN:
-    description: "API key for the Dibbla API"
-    default: "test123"
-  DIBBLA_API_URL: 
-    description: "API URL for the Dibbla API"
-    default: "https://deploy-api.dibbla.app"
 
 tools:
   brew:
@@ -80,6 +74,13 @@ steps:
     tool: dibbla
     depends_on: ["verify-brew", "verify-winget"]
 
+
+  # ── Dibbla login ──────────────────────────────────────────────────
+  - id: dibbla-login
+    name: "Login to Dibbla"
+    type: command
+    run: "dibbla apps list > /dev/null 2>&1 || dibbla login --api-key=$DIBBLA_API_TOKEN"
+    depends_on: ["verify-dibbla"]
 
   # ── Environment setup ──────────────────────────────────────────────
   - id: write-env
