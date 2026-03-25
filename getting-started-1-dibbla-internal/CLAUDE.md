@@ -1,4 +1,4 @@
-# Cursor Rules
+# Project Guide
 
 This project is a Go Fiber backend with a React/TypeScript/Tailwind frontend. The built frontend is **embedded into a single Go binary** for deployment.
 
@@ -45,7 +45,7 @@ If the user asks to add a database:
 
 - **ORM:** Use GORM. Add the dependency and open the DB in `main.go` (or a small `db` package) using a connection string from the environment.
 - **Connection string:** Do not hardcode. Read from an env var (e.g. `DATABASE_URL` or `DB_CONNECTION`). To get the value from Dibbla, use the **Dibbla CLI skill** and run e.g. `dibbla secrets get DB_CONNECTION` if a secret with that name exists.
-- **Create and manage databases via Dibbla only:** Do not add custom SQL or Postgres provisioning code. Use the Dibbla CLI so the app’s database gets the right setup (including pgvector). First check existing databases to avoid name conflicts: `dibbla db list`. Create with `dibbla db create <db_name>`. **Database names** must match `^[a-z][a-z0-9_]{0,62}$` (lowercase, digits, underscores only; no hyphens — use e.g. `garden_demo` not `garden-demo`). See `.claude/skills/dibbla/SKILL.md` and `dibbla --skill-prompt` for full docs.
+- **Create and manage databases via Dibbla only:** Do not add custom SQL or Postgres provisioning code. Use the Dibbla CLI so the app's database gets the right setup (including pgvector). First check existing databases to avoid name conflicts: `dibbla db list`. Create with `dibbla db create <db_name>`. **Database names** must match `^[a-z][a-z0-9_]{0,62}$` (lowercase, digits, underscores only; no hyphens — use e.g. `garden_demo` not `garden-demo`). See `.claude/skills/dibbla/SKILL.md` and `dibbla --skill-prompt` for full docs.
 - **Local dev:** Use the same env var in `.env` (e.g. a local Postgres URL). Document the variable in `.env.example` if needed.
 
 ## Deployment
@@ -68,9 +68,9 @@ When the user asks to deploy, use the **Dibbla CLI skill** (see `.claude/skills/
 
 ## Maintaining rules and skills
 
-When you learn something worthwhile remembering for future sessions, update the project’s guidance:
+When you learn something worthwhile remembering for future sessions, update the project's guidance:
 
 - **Tool-specific knowledge** (Dibbla CLI, deployment, databases, secrets, etc.) → **`.claude/skills/dibbla/SKILL.md`**
-- **Project-specific knowledge** (this repo’s stack, layout, conventions, Docker/Go quirks, etc.) → **`CLAUDE.md`** and **`.cursorrules`** (keep both in sync)
+- **Project-specific knowledge** (this repo's stack, layout, conventions, Docker/Go quirks, etc.) → **`CLAUDE.md`** and **`.cursorrules`** (keep both in sync)
 
 Keep both files accurate and up-to-date so the next session can benefit from what was learned.

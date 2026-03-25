@@ -50,7 +50,9 @@ If the user asks to add a database:
 
 ## Deployment
 
-When the user asks about deployment, use the **Dibbla CLI skill** (see `.claude/skills/dibbla/SKILL.md`):
+**Do not deploy unless the user explicitly asks.** After making changes, assume the user wants to test locally first. Point them to the local dev servers (backend on port 8080, Vite on port 5175) and remind them to hard-reload the browser (Cmd+Shift+R / Ctrl+Shift+R) to bypass the cache if frontend changes aren't showing.
+
+When the user asks to deploy, use the **Dibbla CLI skill** (see `.claude/skills/dibbla/SKILL.md`):
 
 - Deploy with `dibbla deploy .` (no `--yes` needed). Use `--force` to overwrite an existing deployment with the same alias.
 - Pass env vars from `.env` using `--env VAR=val` for each variable the app needs (e.g. `ENV_HELLO_NAME`, `DATABASE_URL`). Source `.env` then pass: `-e "VAR=$VAR"`.
@@ -69,6 +71,6 @@ When the user asks about deployment, use the **Dibbla CLI skill** (see `.claude/
 When you learn something worthwhile remembering for future sessions, update the project’s guidance:
 
 - **Tool-specific knowledge** (Dibbla CLI, deployment, databases, secrets, etc.) → **`.claude/skills/dibbla/SKILL.md`**
-- **Project-specific knowledge** (this repo’s stack, layout, conventions, Docker/Go quirks, etc.) → **`.cursorrules`**
+- **Project-specific knowledge** (this repo’s stack, layout, conventions, Docker/Go quirks, etc.) → **`CLAUDE.md`** and **`.cursorrules`** (keep both in sync)
 
 Keep both files accurate and up-to-date so the next session can benefit from what was learned.
