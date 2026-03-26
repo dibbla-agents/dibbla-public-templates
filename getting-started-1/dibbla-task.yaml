@@ -76,14 +76,16 @@ steps:
     type: command
     run:
       darwin: "brew upgrade dibbla 2>/dev/null || true"
-      windows: "try { irm https://install.dibbla.com/install.ps1 | iex } catch {}; exit 0"
+      windows: "powershell -NoProfile -Command \"try { irm https://install.dibbla.com/install.ps1 | iex } catch {}; exit 0\""
     depends_on: ["verify-dibbla"]
 
   # ── Dibbla login ──────────────────────────────────────────────────
   - id: dibbla-login
     name: "Login to Dibbla"
     type: command
-    run: "dibbla apps list > /dev/null 2>&1 || dibbla login --api-key=$DIBBLA_API_TOKEN"
+    run:
+      darwin: "dibbla apps list > /dev/null 2>&1 || dibbla login --api-key=$DIBBLA_API_TOKEN"
+      windows: "dibbla apps list > NUL 2>&1 || dibbla login --api-key=%DIBBLA_API_TOKEN%"
     depends_on: ["verify-dibbla"]
 
   # ── Frontend build ─────────────────────────────────────────────────
