@@ -84,8 +84,8 @@ steps:
     name: "Login to Dibbla"
     type: command
     run:
-      darwin: "dibbla apps list > /dev/null 2>&1 || dibbla login --api-key=$DIBBLA_API_TOKEN"
-      windows: "dibbla apps list > NUL 2>&1 || dibbla login --api-key=%DIBBLA_API_TOKEN%"
+      darwin: "dibbla login --api-key=$DIBBLA_API_TOKEN"
+      windows: "dibbla login --api-key=%DIBBLA_API_TOKEN%"
     depends_on: ["verify-dibbla"]
 
   # ── Frontend build ─────────────────────────────────────────────────
