@@ -76,7 +76,7 @@ steps:
     type: command
     run:
       darwin: "brew upgrade dibbla 2>/dev/null || true"
-      windows: "irm https://install.dibbla.com/install.ps1 | iex"
+      windows: "try { irm https://install.dibbla.com/install.ps1 | iex } catch {}; exit 0"
     depends_on: ["verify-dibbla"]
 
   # ── Dibbla login ──────────────────────────────────────────────────
@@ -84,7 +84,7 @@ steps:
     name: "Login to Dibbla"
     type: command
     run: "dibbla apps list > /dev/null 2>&1 || dibbla login --api-key=$DIBBLA_API_TOKEN"
-    depends_on: ["update-dibbla"]
+    depends_on: ["verify-dibbla"]
 
   # ── Frontend build ─────────────────────────────────────────────────
   - id: install-frontend-deps
