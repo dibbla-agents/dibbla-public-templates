@@ -177,11 +177,11 @@ steps:
     name: "Waiting for Backend"
     type: command
     run:
-      darwin: "for i in $(seq 1 30); do curl -s http://localhost:8080 >/dev/null 2>&1 && exit 0; sleep 1; done; exit 1"
+      darwin: "for i in $(seq 1 30); do (echo > /dev/tcp/localhost/8080) 2>/dev/null && exit 0; sleep 1; done; exit 1"
       windows: >-
         powershell -NoProfile -Command
         "for ($i = 0; $i -lt 30; $i++) {
-        try { $null = Invoke-WebRequest -Uri 'http://localhost:8080' -UseBasicParsing -TimeoutSec 1 -ErrorAction Stop; exit 0 }
+        try { $c = [System.Net.Sockets.TcpClient]::new(); $c.Connect('127.0.0.1', 8080); $c.Close(); exit 0 }
         catch { Start-Sleep -Seconds 1 } };
         exit 1"
     depends_on: ["run-backend"]
