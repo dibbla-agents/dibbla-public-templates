@@ -180,5 +180,5 @@ steps:
     type: command
     run:
       darwin: "sleep 2 && open http://localhost:5175"
-      windows: "timeout /t 2 >nul && start http://localhost:5175"
+      windows: 'timeout /t 2 >nul && start "" http://localhost:5175'
     depends_on: ["start-frontend-dev"]
