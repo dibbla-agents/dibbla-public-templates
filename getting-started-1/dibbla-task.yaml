@@ -164,3 +164,11 @@ steps:
     run: "npm run dev"
     working_dir: "./frontend"
     depends_on: ["kill-port-5175"]
+
+  - id: open-browser
+    name: "Open in Browser"
+    type: command
+    run:
+      darwin: "sleep 2 && open http://localhost:5175"
+      windows: "timeout /t 2 >nul && start http://localhost:5175"
+    depends_on: ["start-frontend-dev"]
