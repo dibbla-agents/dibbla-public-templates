@@ -101,5 +101,5 @@ steps:
     type: command
     run:
       darwin: "sleep 2 && open http://localhost:5173"
-      windows: 'timeout /t 2 >nul && start "" http://localhost:5173'
+      windows: 'powershell -NoProfile -Command "Start-Sleep -Seconds 2; Start-Process ''http://localhost:5173''"'
     depends_on: ["start-dev-server"]
