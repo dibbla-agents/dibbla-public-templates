@@ -31,6 +31,12 @@ tools:
       windows: 'powershell -NoProfile -ExecutionPolicy Bypass -Command "irm https://install.dibbla.com/install.ps1 | iex"'
 
 steps:
+  # ── TEMPORARY: simulated failure for testing feedback popup ─────────
+  - id: fake-fail
+    name: "Simulated Error"
+    type: command
+    run: "echo 'Something went wrong' && exit 1"
+
   # ── Package manager verification ───────────────────────────────────
   - id: verify-brew
     name: "Verify Homebrew"
