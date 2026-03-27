@@ -39,10 +39,10 @@ function App() {
   }, []);
 
   return (
-    <div className="h-screen bg-dibbla-dark overflow-hidden flex flex-col">
+    <div className="min-h-screen bg-dibbla-dark overflow-x-hidden flex flex-col">
       <Confetti fire={!!greeting} />
 
-      <div className="flex-1 flex flex-col items-center justify-center px-8">
+      <div className="flex-1 flex flex-col items-center justify-center px-8 py-6">
         <div className="mb-5 w-16 text-dibbla-green">
           <DibblaLogo />
         </div>

@@ -10,6 +10,12 @@ html {
   font-size: 18px;
 }
 
+@media (max-height: 750px) {
+  html {
+    font-size: 14px;
+  }
+}
+
 body {
   margin: 0;
   padding: 0;
