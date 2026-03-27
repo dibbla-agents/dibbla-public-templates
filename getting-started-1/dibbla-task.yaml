@@ -130,8 +130,9 @@ steps:
       windows: >-
         powershell -NoProfile -Command
         "Get-NetTCPConnection -LocalPort 8080 -ErrorAction SilentlyContinue |
+        Where-Object { $_.OwningProcess -ne 0 } |
         ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue };
-        Start-Sleep -Seconds 1;
+        Start-Sleep -Seconds 2;
         exit 0"
     depends_on: ["build-go"]
 
@@ -154,8 +155,9 @@ steps:
       windows: >-
         powershell -NoProfile -Command
         "Get-NetTCPConnection -LocalPort 5175 -ErrorAction SilentlyContinue |
+        Where-Object { $_.OwningProcess -ne 0 } |
         ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue };
-        Start-Sleep -Seconds 1;
+        Start-Sleep -Seconds 2;
         exit 0"
     depends_on: ["install-frontend-deps"]
 
@@ -172,5 +174,5 @@ steps:
     type: command
     run:
       darwin: "sleep 2 && open http://localhost:5175"
-      windows: 'timeout /t 2 >nul && start "" http://localhost:5175'
+      windows: 'powershell -NoProfile -Command "Start-Sleep -Seconds 2; Start-Process ''http://localhost:5175''"'
     depends_on: ["start-frontend-dev"]
