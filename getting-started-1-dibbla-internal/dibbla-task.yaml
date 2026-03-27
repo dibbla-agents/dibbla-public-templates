@@ -18,17 +18,17 @@ tools:
     check: "git --version"
     install:
       darwin: "brew install git"
-      windows: "winget install --id Git.Git -e --accept-source-agreements --accept-package-agreements"
+      windows: "winget install --id Git.Git -e --source winget --accept-source-agreements --accept-package-agreements"
   node:
     check: "node --version"
     install:
       darwin: "brew install node"
-      windows: "winget install --id OpenJS.NodeJS.LTS -e --accept-source-agreements --accept-package-agreements"
+      windows: "winget install --id OpenJS.NodeJS.LTS -e --source winget --accept-source-agreements --accept-package-agreements"
   go:
     check: "go version"
     install:
       darwin: "brew install go"
-      windows: "winget install --id GoLang.Go -e --accept-source-agreements --accept-package-agreements"
+      windows: "winget install --id GoLang.Go -e --source winget --accept-source-agreements --accept-package-agreements"
   dibbla:
     check: "dibbla --version"
     install:
@@ -105,6 +105,10 @@ steps:
     run: "npm ci"
     working_dir: "./frontend"
     depends_on: ["verify-node"]
+    retry:
+      max_attempts: 2
+      delay: "5s"
+      on_output: "EPERM"
 
   - id: build-frontend
     name: "Build Frontend"

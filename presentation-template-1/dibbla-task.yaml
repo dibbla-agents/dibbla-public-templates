@@ -13,12 +13,12 @@ tools:
     check: "git --version"
     install:
       darwin: "brew install git"
-      windows: "winget install --id Git.Git -e --accept-source-agreements --accept-package-agreements"
+      windows: "winget install --id Git.Git -e --source winget --accept-source-agreements --accept-package-agreements"
   node:
     check: "node --version"
     install:
       darwin: "brew install node"
-      windows: "winget install --id OpenJS.NodeJS.LTS -e --accept-source-agreements --accept-package-agreements"
+      windows: "winget install --id OpenJS.NodeJS.LTS -e --source winget --accept-source-agreements --accept-package-agreements"
   dibbla:
     check: "dibbla --version"
     install:
@@ -64,6 +64,10 @@ steps:
     type: command
     run: "npm ci"
     depends_on: ["verify-node"]
+    retry:
+      max_attempts: 2
+      delay: "5s"
+      on_output: "EPERM"
 
   # ── Build ──────────────────────────────────────────────────────────
   - id: npm-build
