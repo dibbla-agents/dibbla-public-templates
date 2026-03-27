@@ -183,10 +183,23 @@ steps:
     working_dir: "./frontend"
     depends_on: ["kill-port-5175"]
 
+  - id: wait-backend
+    name: "Waiting for Backend"
+    type: command
+    run:
+      darwin: "for i in $(seq 1 30); do curl -s http://localhost:8080 >/dev/null 2>&1 && exit 0; sleep 1; done; exit 1"
+      windows: >-
+        powershell -NoProfile -Command
+        "for ($i = 0; $i -lt 30; $i++) {
+        try { $null = Invoke-WebRequest -Uri 'http://localhost:8080' -UseBasicParsing -TimeoutSec 1 -ErrorAction Stop; exit 0 }
+        catch { Start-Sleep -Seconds 1 } };
+        exit 1"
+    depends_on: ["run-backend"]
+
   - id: open-browser
     name: "Open in Browser"
     type: command
     run:
       darwin: "sleep 2 && open http://localhost:5175"
       windows: 'powershell -NoProfile -Command "Start-Sleep -Seconds 2; Start-Process ''http://localhost:5175''"'
-    depends_on: ["start-frontend-dev"]
+    depends_on: ["start-frontend-dev", "wait-backend"]
