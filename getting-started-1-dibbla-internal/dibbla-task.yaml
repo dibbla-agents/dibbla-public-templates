@@ -33,7 +33,7 @@ tools:
     check: "dibbla --version"
     install:
       darwin: "brew tap dibbla-agents/tap && brew install dibbla"
-      windows: "irm https://install.dibbla.com/install.ps1 | iex"
+      windows: 'powershell -NoProfile -ExecutionPolicy Bypass -Command "irm https://install.dibbla.com/install.ps1 | iex"'
 
 steps:
   # ── Package manager verification ───────────────────────────────────
