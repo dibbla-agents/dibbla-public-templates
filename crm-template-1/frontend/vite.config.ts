@@ -9,10 +9,10 @@ export default defineConfig({
     emptyOutDir: true,
   },
   server: {
-    port: 5175,
+    port: parseInt(process.env.VITE_PORT || "5175"),
     proxy: {
       "/api": {
-        target: "http://127.0.0.1:8080",
+        target: `http://127.0.0.1:${process.env.PORT || "8080"}`,
         changeOrigin: true,
       },
     },

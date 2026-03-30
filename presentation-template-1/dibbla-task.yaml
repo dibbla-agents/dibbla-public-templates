@@ -1,5 +1,10 @@
 version: "1"
 
+ports:
+  VITE_PORT:
+    preferred: 5173
+    description: "Vite dev server"
+
 tools:
   brew:
     check: "brew --version"
@@ -77,29 +82,17 @@ steps:
     depends_on: ["npm-install"]
 
   # ── Dev server ─────────────────────────────────────────────────────
-  - id: kill-port-5173
-    name: "Kill Process on Port 5173"
-    type: command
-    run:
-      darwin: "lsof -ti:5173 | xargs kill -9 2>/dev/null || true"
-      windows: >-
-        powershell -NoProfile -Command
-        "Get-NetTCPConnection -LocalPort 5173 -ErrorAction SilentlyContinue |
-        ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue };
-        exit 0"
-    depends_on: ["npm-install"]
-
   - id: start-dev-server
     name: "Start Vite Dev Server"
     type: command
     mode: background
     run: "npm run dev"
-    depends_on: ["kill-port-5173"]
+    depends_on: ["npm-install"]
 
   - id: open-browser
     name: "Open in Browser"
     type: command
     run:
-      darwin: "sleep 2 && open http://localhost:5173"
-      windows: 'powershell -NoProfile -Command "Start-Sleep -Seconds 2; Start-Process ''http://localhost:5173''"'
+      darwin: "sleep 2 && open http://localhost:${VITE_PORT:-5173}"
+      windows: 'powershell -NoProfile -Command "Start-Sleep -Seconds 2; $p = if ($env:VITE_PORT) { $env:VITE_PORT } else { ''5173'' }; Start-Process (''http://localhost:'' + $p)"'
     depends_on: ["start-dev-server"]

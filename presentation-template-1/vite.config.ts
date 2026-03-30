@@ -15,7 +15,7 @@ export default defineConfig({
   },
   server: {
     host: 'localhost',
-    port: 5173,
+    port: parseInt(process.env.VITE_PORT || '5173'),
   },
   build: {
     outDir: 'dist',
