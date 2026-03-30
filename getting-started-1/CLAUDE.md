@@ -70,7 +70,7 @@ When the user asks to deploy, use the **Dibbla CLI skill** (see `.claude/skills/
 
 When you learn something worthwhile remembering for future sessions, update the project's guidance:
 
-- **Tool-specific knowledge** (Dibbla CLI, deployment, databases, secrets, etc.) → **`.claude/skills/dibbla/SKILL.md`**
+- **Dibbla CLI skill** — installed automatically via `npx skills add dibbla-agents/skills --skill dibbla`. Do not edit these files locally; they are managed by skills.sh.
 - **Project-specific knowledge** (this repo's stack, layout, conventions, Docker/Go quirks, etc.) → **`CLAUDE.md`** and **`.cursorrules`** (keep both in sync)
 
 Keep both files accurate and up-to-date so the next session can benefit from what was learned.

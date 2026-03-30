@@ -78,6 +78,13 @@ steps:
     depends_on: ["verify-brew", "verify-winget"]
 
 
+  # ── AI editor skills ──────────────────────────────────────────────
+  - id: install-skills
+    name: "Install AI Editor Skills"
+    type: command
+    run: "npx -y skills add dibbla-agents/skills --skill dibbla -a claude-code -y && npx -y skills add dibbla-agents/skills --skill dibbla -a cursor -y && npx -y skills add dibbla-agents/skills --skill dibbla -a opencode -y"
+    depends_on: ["verify-node"]
+
   # ── Dibbla update ─────────────────────────────────────────────────
   - id: update-dibbla
     name: "Update Dibbla CLI"
