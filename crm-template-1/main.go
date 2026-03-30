@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"io/fs"
 	"log"
+	"net"
 	"net/http"
 	"os"
+	"strconv"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/filesystem"
@@ -80,5 +82,33 @@ func main() {
 	if port == "" {
 		port = "80"
 	}
-	log.Fatal(app.Listen(":" + port))
+	log.Fatal(listenWithRetry(app, port))
+}
+
+// listenWithRetry binds the preferred port; if it is busy, it tries the next
+// ports in sequence (like Vite does). The listener is kept open to avoid
+// TOCTOU races.
+func listenWithRetry(app *fiber.App, preferredPort string) error {
+	p, _ := strconv.Atoi(preferredPort)
+	if p == 0 {
+		p = 80
+	}
+	for attempt := 0; attempt < 100; attempt++ {
+		port := p + attempt
+		if port > 65535 {
+			break
+		}
+		ln, err := net.Listen("tcp4", ":"+strconv.Itoa(port))
+		if err != nil {
+			if attempt == 0 {
+				log.Printf("Port %d is in use, trying another one...", port)
+			}
+			continue
+		}
+		if attempt > 0 {
+			log.Printf("Using port %d instead", port)
+		}
+		return app.Listener(ln)
+	}
+	return fmt.Errorf("no free port found in range %d–%d", p, p+99)
 }
