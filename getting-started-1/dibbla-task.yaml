@@ -41,38 +41,38 @@ tools:
 steps:
   # ── Package manager verification ───────────────────────────────────
   - id: verify-brew
-    name: "Verify Homebrew"
+    name: "Check package manager"
     type: tool_check
     tool: brew
     platforms: ["darwin"]
 
   - id: verify-winget
-    name: "Verify winget"
+    name: "Check package manager"
     type: tool_check
     tool: winget
     platforms: ["windows"]
 
   # ── Tool verification ──────────────────────────────────────────────
   - id: verify-git
-    name: "Verify Git"
+    name: "Check Git"
     type: tool_check
     tool: git
     depends_on: ["verify-brew", "verify-winget"]
 
   - id: verify-node
-    name: "Verify Node.js"
+    name: "Check Node.js"
     type: tool_check
     tool: node
     depends_on: ["verify-brew", "verify-winget"]
 
   - id: verify-go
-    name: "Verify Go"
+    name: "Check Go"
     type: tool_check
     tool: go
     depends_on: ["verify-brew", "verify-winget"]
 
   - id: verify-dibbla
-    name: "Verify Dibbla"
+    name: "Check Dibbla"
     type: tool_check
     tool: dibbla
     depends_on: ["verify-brew", "verify-winget"]
@@ -87,7 +87,7 @@ steps:
 
   # ── Dibbla update ─────────────────────────────────────────────────
   - id: update-dibbla
-    name: "Update Dibbla CLI"
+    name: "Update Dibbla"
     type: command
     run:
       darwin: "brew upgrade dibbla 2>/dev/null || true"
@@ -96,7 +96,7 @@ steps:
 
   # ── Dibbla login ──────────────────────────────────────────────────
   - id: dibbla-login
-    name: "Login to Dibbla"
+    name: "Log in to Dibbla"
     type: command
     run:
       darwin: "dibbla login --api-key=$DIBBLA_API_TOKEN"
@@ -105,7 +105,7 @@ steps:
 
   # ── Frontend build ─────────────────────────────────────────────────
   - id: install-frontend-deps
-    name: "Install Frontend Dependencies"
+    name: "Install frontend packages"
     type: command
     run: "npm ci"
     working_dir: "./frontend"
@@ -116,7 +116,7 @@ steps:
       on_output: "EPERM"
 
   - id: build-frontend
-    name: "Build Frontend"
+    name: "Build user interface"
     type: command
     run: "npm run build"
     working_dir: "./frontend"
@@ -124,13 +124,13 @@ steps:
 
   # ── Go build ───────────────────────────────────────────────────────
   - id: go-mod-download
-    name: "Download Go Modules"
+    name: "Install backend packages"
     type: command
     run: "go mod download"
     depends_on: ["verify-go"]
 
   - id: build-go
-    name: "Build Go Binary"
+    name: "Build application"
     type: command
     run:
       darwin: "go build -o ./bin/server main.go"
@@ -142,7 +142,7 @@ steps:
 
   # ── Dev servers ────────────────────────────────────────────────────
   - id: run-backend
-    name: "Start Go Backend"
+    name: "Start backend server"
     type: command
     mode: background
     run:
@@ -153,7 +153,7 @@ steps:
     depends_on: ["build-go"]
 
   - id: start-frontend-dev
-    name: "Start Vite Dev Server"
+    name: "Start frontend server"
     type: command
     mode: background
     run: "npm run dev"
@@ -161,7 +161,7 @@ steps:
     depends_on: ["install-frontend-deps"]
 
   - id: wait-backend
-    name: "Waiting for Backend"
+    name: "Waiting for backend server"
     type: command
     run:
       darwin: 'for i in $(seq 1 30); do (echo > /dev/tcp/localhost/${PORT:-8080}) 2>/dev/null && exit 0; sleep 1; done; exit 1'
@@ -175,7 +175,7 @@ steps:
     depends_on: ["run-backend"]
 
   - id: open-browser
-    name: "Open in Browser"
+    name: "Open in browser"
     type: command
     run:
       darwin: "sleep 2 && open http://localhost:${VITE_PORT:-5175}"

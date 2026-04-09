@@ -33,32 +33,32 @@ tools:
 steps:
   # ── Package manager verification ───────────────────────────────────
   - id: verify-brew
-    name: "Verify Homebrew"
+    name: "Check package manager"
     type: tool_check
     tool: brew
     platforms: ["darwin"]
 
   - id: verify-winget
-    name: "Verify winget"
+    name: "Check package manager"
     type: tool_check
     tool: winget
     platforms: ["windows"]
 
   # ── Tool verification ──────────────────────────────────────────────
   - id: verify-git
-    name: "Verify Git"
+    name: "Check Git"
     type: tool_check
     tool: git
     depends_on: ["verify-brew", "verify-winget"]
 
   - id: verify-node
-    name: "Verify Node.js"
+    name: "Check Node.js"
     type: tool_check
     tool: node
     depends_on: ["verify-brew", "verify-winget"]
 
   - id: verify-dibbla
-    name: "Verify Dibbla CLI"
+    name: "Check Dibbla"
     type: tool_check
     tool: dibbla
     depends_on: ["verify-brew", "verify-winget"]
@@ -72,7 +72,7 @@ steps:
 
   # ── Install dependencies ───────────────────────────────────────────
   - id: npm-install
-    name: "Install Dependencies"
+    name: "Install packages"
     type: command
     run: "npm ci"
     depends_on: ["verify-node"]
@@ -90,14 +90,14 @@ steps:
 
   # ── Dev server ─────────────────────────────────────────────────────
   - id: start-dev-server
-    name: "Start Vite Dev Server"
+    name: "Start frontend server"
     type: command
     mode: background
     run: "npm run dev"
     depends_on: ["npm-install"]
 
   - id: open-browser
-    name: "Open in Browser"
+    name: "Open in browser"
     type: command
     run:
       darwin: "sleep 2 && open http://localhost:${VITE_PORT:-5173}"
