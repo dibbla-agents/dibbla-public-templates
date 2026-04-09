@@ -19,16 +19,24 @@ tools:
     install:
       darwin: "brew install git"
       windows: "winget install --id Git.Git -e --source winget --accept-source-agreements --accept-package-agreements"
+    install_fallback:
+      darwin: "xcode-select --install 2>/dev/null; until xcode-select -p >/dev/null 2>&1; do sleep 5; done"
   node:
     check: "node --version"
+    bin_path: "~/.local/node/bin"
     install:
       darwin: "brew install node"
       windows: "winget install --id OpenJS.NodeJS.LTS -e --source winget --accept-source-agreements --accept-package-agreements"
+    install_fallback:
+      darwin: 'curl -fsSL "https://nodejs.org/dist/v20.18.0/node-v20.18.0-darwin-$(uname -m | sed s/x86_64/x64/).tar.gz" | tar -xz -C ~/.local && rm -rf ~/.local/node && mv ~/.local/node-v* ~/.local/node'
   dibbla:
     check: "dibbla --version"
+    bin_path: "~/.local/bin"
     install:
       darwin: "brew tap dibbla-agents/tap && brew install dibbla"
       windows: 'powershell -NoProfile -ExecutionPolicy Bypass -Command "irm https://install.dibbla.com/install.ps1 | iex"'
+    install_fallback:
+      darwin: "curl -fsSL https://install.dibbla.com/install.sh | sh"
 
 steps:
   # ── Package manager verification ───────────────────────────────────
