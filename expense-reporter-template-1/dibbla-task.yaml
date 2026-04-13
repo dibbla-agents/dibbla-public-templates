@@ -114,6 +114,39 @@ steps:
       windows: "dibbla login api.dibbla.net --api-key=%DIBBLA_API_TOKEN%"
     depends_on: ["verify-dibbla"]
 
+  # ── Write API token to .env ────────────────────────────────────────
+  - id: write-env-token
+    name: "Save API token to .env"
+    type: command
+    run:
+      darwin: |
+        if [ -n "$DIBBLA_API_TOKEN" ]; then
+          if grep -q '^DIBBLA_API_TOKEN=' .env 2>/dev/null; then
+            sed -i '' "s|^DIBBLA_API_TOKEN=.*|DIBBLA_API_TOKEN=$DIBBLA_API_TOKEN|" .env
+          else
+            echo "DIBBLA_API_TOKEN=$DIBBLA_API_TOKEN" >> .env
+          fi
+        fi
+        if grep -q '^MODE=' .env 2>/dev/null; then
+          sed -i '' 's|^MODE=.*|MODE=dev|' .env
+        else
+          echo "MODE=dev" >> .env
+        fi
+      windows: >-
+        powershell -NoProfile -Command
+        "if ($env:DIBBLA_API_TOKEN) {
+        $f = '.env';
+        if (Test-Path $f) { $c = Get-Content $f -Raw;
+        if ($c -match '(?m)^DIBBLA_API_TOKEN=') { $c = $c -replace '(?m)^DIBBLA_API_TOKEN=.*', ('DIBBLA_API_TOKEN=' + $env:DIBBLA_API_TOKEN); Set-Content $f $c }
+        else { Add-Content $f ('DIBBLA_API_TOKEN=' + $env:DIBBLA_API_TOKEN) } }
+        else { Set-Content $f ('DIBBLA_API_TOKEN=' + $env:DIBBLA_API_TOKEN) } };
+        $f = '.env';
+        if (Test-Path $f) { $c = Get-Content $f -Raw;
+        if ($c -match '(?m)^MODE=') { $c = $c -replace '(?m)^MODE=.*', 'MODE=dev'; Set-Content $f $c }
+        else { Add-Content $f 'MODE=dev' } }
+        else { Set-Content $f 'MODE=dev' }"
+    depends_on: ["dibbla-login"]
+
   # ── Frontend build ─────────────────────────────────────────────────
   - id: install-frontend-deps
     name: "Install frontend packages"

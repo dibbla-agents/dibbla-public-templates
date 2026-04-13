@@ -571,6 +571,22 @@ func getSessionID(c *fiber.Ctx) string {
 }
 
 // ---------------------------------------------------------------------------
+// Helpers — auth token resolution
+// ---------------------------------------------------------------------------
+
+// getAuthToken returns the auth token for gateway requests.
+// In dev mode (MODE=dev), it uses DIBBLA_API_TOKEN from the environment.
+// In production, it reads the auth_token cookie set by the gateway proxy.
+func getAuthToken(c *fiber.Ctx) string {
+	if os.Getenv("MODE") == "dev" {
+		if token := os.Getenv("DIBBLA_API_TOKEN"); token != "" {
+			return token
+		}
+	}
+	return c.Cookies("auth_token")
+}
+
+// ---------------------------------------------------------------------------
 // Main
 // ---------------------------------------------------------------------------
 
@@ -581,11 +597,15 @@ func main() {
 
 	gatewayURL := os.Getenv("GATEWAY_URL")
 	if gatewayURL == "" {
-		gatewayURL = "http://localhost:3456"
+		gatewayURL = "https://api.dibbla.net"
 	}
 	platform := &PlatformClient{
 		gatewayURL: strings.TrimRight(gatewayURL, "/"),
 		httpClient: &http.Client{Timeout: 5 * time.Minute},
+	}
+
+	if os.Getenv("MODE") == "dev" {
+		log.Println("Running in DEV mode — using DIBBLA_API_TOKEN for gateway auth")
 	}
 
 	app := fiber.New(fiber.Config{
@@ -679,7 +699,7 @@ func main() {
 
 	// Check Google scopes — frontend calls this on page load
 	app.Get("/api/check-scopes", func(c *fiber.Ctx) error {
-		authToken := c.Cookies("auth_token")
+		authToken := getAuthToken(c)
 		if authToken == "" {
 			return c.JSON(fiber.Map{"ok": true}) // no auth token yet, proxy will handle login
 		}
@@ -711,7 +731,7 @@ func main() {
 			return c.Status(400).JSON(fiber.Map{"error": "no files uploaded"})
 		}
 
-		authToken := c.Cookies("auth_token")
+		authToken := getAuthToken(c)
 		if authToken == "" {
 			return c.Status(401).JSON(fiber.Map{"error": "not authenticated — please log in"})
 		}
