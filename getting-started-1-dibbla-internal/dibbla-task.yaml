@@ -2,10 +2,10 @@ version: "1"
 
 ports:
   PORT:
-    preferred: 8080
+    preferred: 8120
     description: "Go backend HTTP server"
   VITE_PORT:
-    preferred: 5175
+    preferred: 5215
     description: "Vite dev server"
 
 env:
@@ -170,7 +170,7 @@ steps:
       darwin: "./bin/server"
       windows: ".\\bin\\server.exe"
     env:
-      PORT: "8080"
+      PORT: "8120"
     depends_on: ["build-go"]
 
   - id: start-frontend-dev
@@ -185,10 +185,10 @@ steps:
     name: "Waiting for backend server"
     type: command
     run:
-      darwin: 'for i in $(seq 1 30); do (echo > /dev/tcp/localhost/${PORT:-8080}) 2>/dev/null && exit 0; sleep 1; done; exit 1'
+      darwin: 'for i in $(seq 1 30); do (echo > /dev/tcp/localhost/${PORT:-8120}) 2>/dev/null && exit 0; sleep 1; done; exit 1'
       windows: >-
         powershell -NoProfile -Command
-        "$p = if ($env:PORT) { $env:PORT } else { '8080' };
+        "$p = if ($env:PORT) { $env:PORT } else { '8120' };
         for ($i = 0; $i -lt 30; $i++) {
         try { $c = [System.Net.Sockets.TcpClient]::new(); $c.Connect('127.0.0.1', [int]$p); $c.Close(); exit 0 }
         catch { Start-Sleep -Seconds 1 } };
@@ -199,6 +199,6 @@ steps:
     name: "Open in browser"
     type: command
     run:
-      darwin: "sleep 2 && open http://localhost:${VITE_PORT:-5175}"
-      windows: 'powershell -NoProfile -Command "Start-Sleep -Seconds 2; $p = if ($env:VITE_PORT) { $env:VITE_PORT } else { ''5175'' }; Start-Process (''http://localhost:'' + $p)"'
+      darwin: "sleep 2 && open http://localhost:${VITE_PORT:-5215}"
+      windows: 'powershell -NoProfile -Command "Start-Sleep -Seconds 2; $p = if ($env:VITE_PORT) { $env:VITE_PORT } else { ''5215'' }; Start-Process (''http://localhost:'' + $p)"'
     depends_on: ["start-frontend-dev", "wait-backend"]

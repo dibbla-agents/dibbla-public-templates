@@ -2,7 +2,7 @@ version: "1"
 
 ports:
   VITE_PORT:
-    preferred: 5173
+    preferred: 5335
     description: "Vite dev server"
 
 tools:
@@ -108,6 +108,6 @@ steps:
     name: "Open in browser"
     type: command
     run:
-      darwin: "sleep 2 && open http://localhost:${VITE_PORT:-5173}"
-      windows: 'powershell -NoProfile -Command "Start-Sleep -Seconds 2; $p = if ($env:VITE_PORT) { $env:VITE_PORT } else { ''5173'' }; Start-Process (''http://localhost:'' + $p)"'
+      darwin: "sleep 2 && open http://localhost:${VITE_PORT:-5335}"
+      windows: 'powershell -NoProfile -Command "Start-Sleep -Seconds 2; $p = if ($env:VITE_PORT) { $env:VITE_PORT } else { ''5335'' }; Start-Process (''http://localhost:'' + $p)"'
     depends_on: ["start-dev-server"]
