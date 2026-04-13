@@ -579,7 +579,7 @@ func getSessionID(c *fiber.Ctx) string {
 // In production, it reads the auth_token cookie set by the gateway proxy.
 func getAuthToken(c *fiber.Ctx) string {
 	if os.Getenv("MODE") == "dev" {
-		if token := os.Getenv("DIBBLA_API_TOKEN"); token != "" {
+		if token := os.Getenv("DIBBLA_TOKEN"); token != "" {
 			return token
 		}
 	}
@@ -605,7 +605,7 @@ func main() {
 	}
 
 	if os.Getenv("MODE") == "dev" {
-		log.Println("Running in DEV mode — using DIBBLA_API_TOKEN for gateway auth")
+		log.Println("Running in DEV mode — using DIBBLA_TOKEN for gateway auth")
 	}
 
 	app := fiber.New(fiber.Config{
