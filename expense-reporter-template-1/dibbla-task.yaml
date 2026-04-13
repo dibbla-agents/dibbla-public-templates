@@ -110,8 +110,8 @@ steps:
     name: "Log in to Dibbla"
     type: command
     run:
-      darwin: "dibbla login api.dibbla.net --api-key=$DIBBLA_TOKEN"
-      windows: "dibbla login api.dibbla.net --api-key=%DIBBLA_TOKEN%"
+      darwin: "dibbla login api.dibbla.net --api-key=$DIBBLA_API_TOKEN"
+      windows: "dibbla login api.dibbla.net --api-key=%DIBBLA_API_TOKEN%"
     depends_on: ["verify-dibbla"]
 
   # ── Write API token to .env ────────────────────────────────────────
@@ -120,11 +120,11 @@ steps:
     type: command
     run:
       darwin: |
-        if [ -n "$DIBBLA_TOKEN" ]; then
-          if grep -q '^DIBBLA_TOKEN=' .env 2>/dev/null; then
-            sed -i '' "s|^DIBBLA_TOKEN=.*|DIBBLA_TOKEN=$DIBBLA_TOKEN|" .env
+        if [ -n "$DIBBLA_API_TOKEN" ]; then
+          if grep -q '^DIBBLA_API_TOKEN=' .env 2>/dev/null; then
+            sed -i '' "s|^DIBBLA_API_TOKEN=.*|DIBBLA_API_TOKEN=$DIBBLA_API_TOKEN|" .env
           else
-            echo "DIBBLA_TOKEN=$DIBBLA_TOKEN" >> .env
+            echo "DIBBLA_API_TOKEN=$DIBBLA_API_TOKEN" >> .env
           fi
         fi
         if grep -q '^MODE=' .env 2>/dev/null; then
@@ -139,12 +139,12 @@ steps:
         fi
       windows: >-
         powershell -NoProfile -Command
-        "if ($env:DIBBLA_TOKEN) {
+        "if ($env:DIBBLA_API_TOKEN) {
         $f = '.env';
         if (Test-Path $f) { $c = Get-Content $f -Raw;
-        if ($c -match '(?m)^DIBBLA_TOKEN=') { $c = $c -replace '(?m)^DIBBLA_TOKEN=.*', ('DIBBLA_TOKEN=' + $env:DIBBLA_TOKEN); Set-Content $f $c }
-        else { Add-Content $f ('DIBBLA_TOKEN=' + $env:DIBBLA_TOKEN) } }
-        else { Set-Content $f ('DIBBLA_TOKEN=' + $env:DIBBLA_TOKEN) } };
+        if ($c -match '(?m)^DIBBLA_API_TOKEN=') { $c = $c -replace '(?m)^DIBBLA_API_TOKEN=.*', ('DIBBLA_API_TOKEN=' + $env:DIBBLA_API_TOKEN); Set-Content $f $c }
+        else { Add-Content $f ('DIBBLA_API_TOKEN=' + $env:DIBBLA_API_TOKEN) } }
+        else { Set-Content $f ('DIBBLA_API_TOKEN=' + $env:DIBBLA_API_TOKEN) } };
         $f = '.env';
         if (Test-Path $f) { $c = Get-Content $f -Raw;
         if ($c -match '(?m)^MODE=') { $c = $c -replace '(?m)^MODE=.*', 'MODE=dev'; Set-Content $f $c }
