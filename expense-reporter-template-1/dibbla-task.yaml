@@ -132,6 +132,11 @@ steps:
         else
           echo "MODE=dev" >> .env
         fi
+        if grep -q '^WORKFLOW_EXEC_PATH=' .env 2>/dev/null; then
+          sed -i '' 's|^WORKFLOW_EXEC_PATH=.*|WORKFLOW_EXEC_PATH=/api/wf/execute/expense-extractor/9tv6xu67|' .env
+        else
+          echo "WORKFLOW_EXEC_PATH=/api/wf/execute/expense-extractor/9tv6xu67" >> .env
+        fi
       windows: >-
         powershell -NoProfile -Command
         "if ($env:DIBBLA_API_TOKEN) {
@@ -144,7 +149,12 @@ steps:
         if (Test-Path $f) { $c = Get-Content $f -Raw;
         if ($c -match '(?m)^MODE=') { $c = $c -replace '(?m)^MODE=.*', 'MODE=dev'; Set-Content $f $c }
         else { Add-Content $f 'MODE=dev' } }
-        else { Set-Content $f 'MODE=dev' }"
+        else { Set-Content $f 'MODE=dev' };
+        $f = '.env';
+        if (Test-Path $f) { $c = Get-Content $f -Raw;
+        if ($c -match '(?m)^WORKFLOW_EXEC_PATH=') { $c = $c -replace '(?m)^WORKFLOW_EXEC_PATH=.*', 'WORKFLOW_EXEC_PATH=/api/wf/execute/expense-extractor/9tv6xu67'; Set-Content $f $c }
+        else { Add-Content $f 'WORKFLOW_EXEC_PATH=/api/wf/execute/expense-extractor/9tv6xu67' } }
+        else { Set-Content $f 'WORKFLOW_EXEC_PATH=/api/wf/execute/expense-extractor/9tv6xu67' }"
     depends_on: ["dibbla-login"]
 
   # ── Frontend build ─────────────────────────────────────────────────
