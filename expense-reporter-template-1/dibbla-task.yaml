@@ -120,11 +120,11 @@ steps:
     type: command
     run:
       darwin: |
-        if [ -n "$DIBBLA_TOKEN" ]; then
+        if [ -n "$DIBBLA_API_TOKEN" ]; then
           if grep -q '^DIBBLA_TOKEN=' .env 2>/dev/null; then
-            sed -i '' "s|^DIBBLA_TOKEN=.*|DIBBLA_TOKEN=$DIBBLA_TOKEN|" .env
+            sed -i '' "s|^DIBBLA_TOKEN=.*|DIBBLA_TOKEN=$DIBBLA_API_TOKEN|" .env
           else
-            echo "DIBBLA_TOKEN=$DIBBLA_TOKEN" >> .env
+            echo "DIBBLA_TOKEN=$DIBBLA_API_TOKEN" >> .env
           fi
         fi
         if grep -q '^MODE=' .env 2>/dev/null; then
