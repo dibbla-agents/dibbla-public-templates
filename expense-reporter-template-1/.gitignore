@@ -1,0 +1,25 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+*.tsbuildinfo
+
+# Go
+/server
+/bin/
+
+# IDE
+.vscode/
+.idea/
+
+# Environment
+.env
+
+# Claude Code
+.claude/
+.agents/
+
+# OS
+.DS_Store
+Thumbs.db
