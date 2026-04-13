@@ -110,8 +110,8 @@ steps:
     name: "Log in to Dibbla"
     type: command
     run:
-      darwin: "dibbla login --api-key=$DIBBLA_API_TOKEN"
-      windows: "dibbla login --api-key=%DIBBLA_API_TOKEN%"
+      darwin: "dibbla login api.dibbla.net --api-key=$DIBBLA_API_TOKEN"
+      windows: "dibbla login api.dibbla.net --api-key=%DIBBLA_API_TOKEN%"
     depends_on: ["verify-dibbla"]
 
   # ── Frontend build ─────────────────────────────────────────────────
