@@ -139,12 +139,12 @@ steps:
         fi
       windows: >-
         powershell -NoProfile -Command
-        "if ($env:DIBBLA_TOKEN) {
+        "if ($env:DIBBLA_API_TOKEN) {
         $f = '.env';
         if (Test-Path $f) { $c = Get-Content $f -Raw;
-        if ($c -match '(?m)^DIBBLA_TOKEN=') { $c = $c -replace '(?m)^DIBBLA_TOKEN=.*', ('DIBBLA_TOKEN=' + $env:DIBBLA_TOKEN); Set-Content $f $c }
-        else { Add-Content $f ('DIBBLA_TOKEN=' + $env:DIBBLA_TOKEN) } }
-        else { Set-Content $f ('DIBBLA_TOKEN=' + $env:DIBBLA_TOKEN) } };
+        if ($c -match '(?m)^DIBBLA_TOKEN=') { $c = $c -replace '(?m)^DIBBLA_TOKEN=.*', ('DIBBLA_TOKEN=' + $env:DIBBLA_API_TOKEN); Set-Content $f $c }
+        else { Add-Content $f ('DIBBLA_TOKEN=' + $env:DIBBLA_API_TOKEN) } }
+        else { Set-Content $f ('DIBBLA_TOKEN=' + $env:DIBBLA_API_TOKEN) } };
         $f = '.env';
         if (Test-Path $f) { $c = Get-Content $f -Raw;
         if ($c -match '(?m)^MODE=') { $c = $c -replace '(?m)^MODE=.*', 'MODE=dev'; Set-Content $f $c }
