@@ -46,6 +46,8 @@ function App() {
         if (data.login_url) {
           sessionStorage.setItem("scope_redirect", "1");
           window.location.href = data.login_url;
+        } else {
+          sessionStorage.removeItem("scope_redirect");
         }
       })
       .catch(() => {});

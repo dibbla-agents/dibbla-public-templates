@@ -209,7 +209,7 @@ func (e *MissingScopesError) Error() string {
 }
 
 // GetGoogleToken validates the user's auth token and returns a fresh Google access token.
-func (pc *PlatformClient) GetGoogleToken(authToken string) (string, error) {
+func (pc *PlatformClient) GetGoogleToken(authToken string, returnTo string) (string, error) {
 	resp, err := pc.doRequest("POST", "/api/auth/v1/tokens/validate", nil, "", authToken)
 	if err != nil {
 		return "", fmt.Errorf("validate token failed: %w", err)
@@ -230,7 +230,11 @@ func (pc *PlatformClient) GetGoogleToken(authToken string) (string, error) {
 		return "", fmt.Errorf("no user_id in validate response")
 	}
 
-	resp2, err := pc.httpClient.Get(fmt.Sprintf("%s/auth/oauth/google/token?user_id=%s&scopes=%s", pc.gatewayURL, uc.UserID, url.QueryEscape(requiredGoogleScope)))
+	tokenURL := fmt.Sprintf("%s/auth/oauth/google/token?user_id=%s&scopes=%s", pc.gatewayURL, uc.UserID, url.QueryEscape(requiredGoogleScope))
+	if returnTo != "" {
+		tokenURL += "&return_to=" + url.QueryEscape(returnTo)
+	}
+	resp2, err := pc.httpClient.Get(tokenURL)
 	if err != nil {
 		return "", fmt.Errorf("get google token failed: %w", err)
 	}
@@ -703,7 +707,8 @@ func main() {
 		if authToken == "" {
 			return c.JSON(fiber.Map{"ok": true}) // no auth token yet, proxy will handle login
 		}
-		_, tokenErr := platform.GetGoogleToken(authToken)
+		returnTo := c.Protocol() + "://" + c.Hostname()
+		_, tokenErr := platform.GetGoogleToken(authToken, returnTo)
 		if tokenErr != nil {
 			var scopeErr *MissingScopesError
 			if errors.As(tokenErr, &scopeErr) {
@@ -765,7 +770,7 @@ func main() {
 		}
 
 		// 3. Get Google token and create sheet
-		googleToken, tokenErr := platform.GetGoogleToken(authToken)
+		googleToken, tokenErr := platform.GetGoogleToken(authToken, c.Protocol()+"://"+c.Hostname())
 		if tokenErr != nil {
 			log.Printf("Failed to get Google token: %v", tokenErr)
 			var scopeErr *MissingScopesError
