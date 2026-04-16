@@ -56,9 +56,15 @@ If the user asks to add a database:
 When the user asks to deploy, use the **Dibbla CLI skill** (see `.claude/skills/dibbla/SKILL.md`):
 
 - Deploy with `dibbla deploy .` (no `--yes` needed). Use `--force` to overwrite an existing deployment with the same alias.
+- **Always pass `--require-login`** so the app requires authentication. This app uses the authenticated user's identity to obtain Google OAuth tokens via the Dibbla gateway.
+- **Always pass `--google-scopes https://www.googleapis.com/auth/spreadsheets`** so the user is prompted to grant Google Sheets access on login. Without this scope the app cannot create expense report spreadsheets.
 - Pass env vars from `.env` using `--env VAR=val` for each variable the app needs (e.g. `WORKFLOW_EXEC_PATH`). Source `.env` then pass: `-e "VAR=$VAR"`.
 - If the app listens on a port other than 80, set it with `--port <port>` (match the port in the Dockerfile).
 - For updates to an existing deployment, use `dibbla update`; run `dibbla --skill-prompt` for full options.
+- **Example deploy command:**
+  ```
+  dibbla deploy . --require-login --google-scopes https://www.googleapis.com/auth/spreadsheets -e "WORKFLOW_EXEC_PATH=$WORKFLOW_EXEC_PATH"
+  ```
 
 ## Docker & Dibbla build (lessons learned)
 
