@@ -52,12 +52,18 @@ If the user asks to add a database:
 
 **Do not deploy unless the user explicitly asks.** After making changes, assume the user wants to test locally first. Point them to the local dev servers (backend on port 8080, Vite on port 5175) and remind them to hard-reload the browser (Cmd+Shift+R / Ctrl+Shift+R) to bypass the cache if frontend changes aren't showing.
 
+Dibbla is pre-installed via the `dibbla-task.yaml` setup steps (you will find the path to where it is installed there). Do not reinstall it.
+
 When the user asks to deploy, use the **Dibbla CLI skill** (see `.claude/skills/dibbla/SKILL.md`):
 
 - Deploy with `dibbla deploy .` (no `--yes` needed). Use `--force` to overwrite an existing deployment with the same alias.
 - Pass env vars from `.env` using `--env VAR=val` for each variable the app needs (e.g. `DATABASE_URL`). Source `.env` then pass: `-e "VAR=$VAR"`.
 - If the app listens on a port other than 80, set it with `--port <port>` (match the port in the Dockerfile).
 - For updates to an existing deployment, use `dibbla update`; run `dibbla --skill-prompt` for full options.
+- **Example deploy command:**
+  ```
+  dibbla deploy . --alias <name>
+  ```
 
 ## Docker & Dibbla build (lessons learned)
 
@@ -65,6 +71,7 @@ When the user asks to deploy, use the **Dibbla CLI skill** (see `.claude/skills/
 - **Go version alignment:** The Go version in `go.mod` and the Docker image (e.g. `golang:1.24-alpine`) must satisfy all dependencies. If the build fails with "requires go >= 1.24.0", use Go 1.24 in both; do not mix `go 1.23` with images or vendor trees that require 1.24.
 - **Dibbla builder:** Prefer `go mod download` in the Dockerfile (with `ENV GOPROXY=https://proxy.golang.org,direct`) over `-mod=vendor`. Vendored builds can fail on Dibbla when vendor/modules.txt has a higher Go requirement than the image.
 - **Local Vite proxy:** The frontend proxies `/api` to `http://127.0.0.1:8080`. Start the backend with `PORT=8080 go run main.go` so the proxy works; otherwise you get "http proxy error: /api/...".
+- **Mounted `dist/` files may be read-only:** When working on a mounted volume, Vite cannot overwrite existing files in `dist/`. Build to a temp directory instead: `npx vite build --outDir /tmp/dist --emptyOutDir` from `frontend/`, then copy the output back into `dist/`.
 
 ## Theming
 

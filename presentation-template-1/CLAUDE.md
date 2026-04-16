@@ -44,8 +44,11 @@ This project is a React/TypeScript/Tailwind CSS slide presentation. The built fr
 - **Build:** `npm run build` — output to `dist/`.
 - **PDF:** `npm run generate-pdf:full` — starts server, captures all slides, merges to PDF in `public/`.
 - **Docker:** `docker build -t presentation .` — multi-stage, serves on port 80.
+- **Mounted `dist/` files may be read-only:** When working on a mounted volume, Vite cannot overwrite existing files in `dist/`. Build to a temp directory instead: `npx vite build --outDir /tmp/dist --emptyOutDir`, then copy the output back into `dist/`.
 
 ## Deployment
+
+Dibbla is pre-installed via the `dibbla-task.yaml` setup steps (you will find the path to where it is installed there). Do not reinstall it.
 
 When the user asks about deployment, use the **Dibbla CLI skill** (see `.claude/skills/dibbla/SKILL.md`):
 
