@@ -195,6 +195,96 @@ steps:
 
 
   # ── Dev servers ────────────────────────────────────────────────────
+  # Reclaim the dev ports before starting servers. If a previous run left a
+  # ./bin/server or Vite process behind, kill it. If an unrelated process
+  # holds the port, fail with a clear message instead of silently falling
+  # back — otherwise the frontend proxy and the backend would drift apart.
+  - id: reclaim-ports
+    name: "Reclaim dev ports"
+    type: command
+    run:
+      darwin: |
+        set -u
+        mkdir -p .dev
+        reclaim() {
+          local port="$1"
+          local label="$2"
+          local match_regex="$3"
+          local holder
+          holder=$(lsof -ti tcp:"$port" -sTCP:LISTEN 2>/dev/null || true)
+          if [ -z "$holder" ]; then
+            return 0
+          fi
+          for pid in $holder; do
+            local cmd
+            cmd=$(ps -p "$pid" -o command= 2>/dev/null || echo "")
+            if echo "$cmd" | grep -Eq "$match_regex"; then
+              echo "Reclaiming $label port $port from stale PID $pid ($cmd)"
+              kill "$pid" 2>/dev/null || true
+              sleep 1
+              kill -9 "$pid" 2>/dev/null || true
+            else
+              echo "ERROR: $label port $port is held by PID $pid — not a previous run of this template." >&2
+              echo "       Process: $cmd" >&2
+              echo "       Stop that process (e.g. 'kill $pid') and retry." >&2
+              exit 1
+            fi
+          done
+        }
+        # Backend: prefer PID file, then fall back to port holder check.
+        if [ -f .dev/backend.pid ]; then
+          pid=$(cat .dev/backend.pid 2>/dev/null || echo "")
+          if [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null; then
+            cmd=$(ps -p "$pid" -o command= 2>/dev/null || echo "")
+            case "$cmd" in
+              *bin/server*|*bin\\server*)
+                echo "Reclaiming backend PID $pid from previous run"
+                kill "$pid" 2>/dev/null || true
+                sleep 1
+                kill -9 "$pid" 2>/dev/null || true
+                ;;
+            esac
+          fi
+          rm -f .dev/backend.pid .dev/backend.port
+        fi
+        reclaim "${PORT:-8210}" "backend" "bin/server"
+        reclaim "${VITE_PORT:-5305}" "Vite dev server" "vite|node.*vite"
+      windows: >-
+        powershell -NoProfile -Command
+        "$ErrorActionPreference = 'Stop';
+        New-Item -ItemType Directory -Force -Path .dev | Out-Null;
+        function Reclaim($port, $label, $pattern) {
+          $conns = Get-NetTCPConnection -LocalPort $port -State Listen -ErrorAction SilentlyContinue;
+          foreach ($c in $conns) {
+            $p = Get-Process -Id $c.OwningProcess -ErrorAction SilentlyContinue;
+            if (-not $p) { continue }
+            $cmd = ($p.Path + ' ' + ($p.CommandLine 2>$null));
+            if ($cmd -match $pattern) {
+              Write-Host \"Reclaiming $label port $port from stale PID $($p.Id) ($($p.ProcessName))\";
+              Stop-Process -Id $p.Id -Force -ErrorAction SilentlyContinue;
+            } else {
+              Write-Error \"$label port $port is held by PID $($p.Id) ($($p.ProcessName)). Stop that process and retry.\";
+              exit 1;
+            }
+          }
+        };
+        if (Test-Path .dev\backend.pid) {
+          $pid = (Get-Content .dev\backend.pid -ErrorAction SilentlyContinue) -as [int];
+          if ($pid) {
+            $p = Get-Process -Id $pid -ErrorAction SilentlyContinue;
+            if ($p -and ($p.Path -match 'bin\\server')) {
+              Write-Host \"Reclaiming backend PID $pid from previous run\";
+              Stop-Process -Id $pid -Force -ErrorAction SilentlyContinue;
+            }
+          }
+          Remove-Item -Force -ErrorAction SilentlyContinue .dev\backend.pid, .dev\backend.port;
+        };
+        $bp = if ($env:PORT) { [int]$env:PORT } else { 8210 };
+        $vp = if ($env:VITE_PORT) { [int]$env:VITE_PORT } else { 5305 };
+        Reclaim $bp 'backend' 'bin\\server';
+        Reclaim $vp 'Vite dev server' 'vite'"
+    depends_on: ["build-go", "install-frontend-deps"]
+
   - id: run-backend
     name: "Start backend server"
     type: command
@@ -204,25 +294,42 @@ steps:
       windows: ".\\bin\\server.exe"
     env:
       PORT: "8210"
-    depends_on: ["build-go"]
+    depends_on: ["reclaim-ports"]
 
+  # Can start in parallel with the backend — the Vite proxy uses a dynamic
+  # `router` that reads .dev/backend.port on every request, so it self-heals
+  # once the backend publishes its actual port.
   - id: start-frontend-dev
     name: "Start frontend server"
     type: command
     mode: background
     run: "npm run dev"
     working_dir: "./frontend"
-    depends_on: ["install-frontend-deps"]
+    depends_on: ["reclaim-ports"]
 
+  # Poll the actual bound port written by the backend (.dev/backend.port),
+  # falling back to $PORT while the file is still being created. This keeps
+  # the readiness check honest even if the backend fell back to PORT+1.
   - id: wait-backend
     name: "Waiting for backend server"
     type: command
     run:
-      darwin: 'for i in $(seq 1 30); do (echo > /dev/tcp/localhost/${PORT:-8210}) 2>/dev/null && exit 0; sleep 1; done; exit 1'
+      darwin: |
+        for i in $(seq 1 30); do
+          if [ -f .dev/backend.port ]; then
+            p=$(cat .dev/backend.port 2>/dev/null)
+          else
+            p="${PORT:-8210}"
+          fi
+          (echo > /dev/tcp/localhost/"$p") 2>/dev/null && exit 0
+          sleep 1
+        done
+        exit 1
       windows: >-
         powershell -NoProfile -Command
-        "$p = if ($env:PORT) { $env:PORT } else { '8210' };
-        for ($i = 0; $i -lt 30; $i++) {
+        "for ($i = 0; $i -lt 30; $i++) {
+        $p = if (Test-Path .dev\backend.port) { (Get-Content .dev\backend.port -Raw).Trim() }
+             elseif ($env:PORT) { $env:PORT } else { '8210' };
         try { $c = [System.Net.Sockets.TcpClient]::new(); $c.Connect('127.0.0.1', [int]$p); $c.Close(); exit 0 }
         catch { Start-Sleep -Seconds 1 } };
         exit 1"

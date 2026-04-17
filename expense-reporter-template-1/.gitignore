@@ -20,6 +20,9 @@ dist/
 .claude/
 .agents/
 
+# Dev runtime state (backend port/pid files)
+.dev/
+
 # OS
 .DS_Store
 Thumbs.db

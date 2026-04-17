@@ -13,9 +13,11 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"os/signal"
 	"strconv"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -828,7 +830,8 @@ func listenWithRetry(app *fiber.App, preferredPort string) error {
 	if p == 0 {
 		p = 80
 	}
-	for attempt := range 100 {
+	const maxAttempts = 20
+	for attempt := range maxAttempts {
 		port := p + attempt
 		if port > 65535 {
 			break
@@ -843,7 +846,44 @@ func listenWithRetry(app *fiber.App, preferredPort string) error {
 		if attempt > 0 {
 			log.Printf("Using port %d instead", port)
 		}
-		return app.Listener(ln)
+		writeDevPortFiles(port)
+		installDevSignalCleanup(app)
+		log.Printf("Backend listening on http://127.0.0.1:%d", port)
+		err = app.Listener(ln)
+		cleanupDevPortFiles()
+		return err
 	}
-	return fmt.Errorf("no free port found in range %d–%d", p, p+99)
+	return fmt.Errorf("no free port found in range %d–%d", p, p+maxAttempts-1)
+}
+
+// writeDevPortFiles publishes the actual bound port + pid so the Vite dev
+// proxy and dev-task pre-flight can find us even if we fell back to a
+// non-preferred port. Best-effort: a read-only filesystem (e.g. prod) just
+// logs a warning and continues — the backend still runs normally.
+func writeDevPortFiles(port int) {
+	if err := os.MkdirAll(".dev", 0o755); err != nil {
+		log.Printf("warn: could not create .dev dir: %v", err)
+		return
+	}
+	if err := os.WriteFile(".dev/backend.port", []byte(strconv.Itoa(port)), 0o644); err != nil {
+		log.Printf("warn: could not write .dev/backend.port: %v", err)
+	}
+	if err := os.WriteFile(".dev/backend.pid", []byte(strconv.Itoa(os.Getpid())), 0o644); err != nil {
+		log.Printf("warn: could not write .dev/backend.pid: %v", err)
+	}
+}
+
+func cleanupDevPortFiles() {
+	_ = os.Remove(".dev/backend.port")
+	_ = os.Remove(".dev/backend.pid")
+}
+
+func installDevSignalCleanup(app *fiber.App) {
+	sigs := make(chan os.Signal, 1)
+	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
+	go func() {
+		<-sigs
+		cleanupDevPortFiles()
+		_ = app.Shutdown()
+	}()
 }
