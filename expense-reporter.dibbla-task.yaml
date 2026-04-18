@@ -1,0 +1,68 @@
+version: "1"
+
+# Bootstrap task for the Expense Reporter template.
+#
+# Usage:
+#   mkdir my-expense-app && cd my-expense-app
+#   dibbla run https://raw.githubusercontent.com/dibbla-agents/dibbla-public-templates/master/expense-reporter.dibbla-task.yaml
+#
+# This file:
+#   1. Verifies git is installed.
+#   2. Clones the expense-reporter-template-1 subdirectory from this repo
+#      into the current working directory (idempotent).
+#   3. Recursively runs the template's own dibbla-task.yaml from inside the
+#      cloned directory.
+
+tools:
+  git:
+    check: "git --version"
+    install:
+      darwin: "brew install git"
+      windows: "winget install --id Git.Git -e --source winget --accept-source-agreements --accept-package-agreements"
+    install_fallback:
+      darwin: "xcode-select --install 2>/dev/null; until xcode-select -p >/dev/null 2>&1; do sleep 5; done"
+
+steps:
+  - id: verify-git
+    name: "Check Git"
+    type: tool_check
+    tool: git
+
+  - id: clone-template
+    name: "Fetch expense-reporter-template-1 into current directory"
+    type: command
+    run:
+      darwin: |
+        set -e
+        if [ -d expense-reporter-template-1 ]; then
+          echo "expense-reporter-template-1 already exists in $(pwd); skipping clone"
+        else
+          tmp=$(mktemp -d)
+          git clone --depth=1 -b master \
+            https://github.com/dibbla-agents/dibbla-public-templates.git "$tmp"
+          mv "$tmp/expense-reporter-template-1" .
+          rm -rf "$tmp"
+          echo "Cloned expense-reporter-template-1 into $(pwd)/expense-reporter-template-1"
+        fi
+      windows: |
+        powershell -NoProfile -ExecutionPolicy Bypass -Command "
+          $ErrorActionPreference = 'Stop';
+          if (Test-Path 'expense-reporter-template-1') {
+            Write-Host 'expense-reporter-template-1 already exists; skipping clone'
+          } else {
+            $tmp = Join-Path $env:TEMP ([System.Guid]::NewGuid().ToString());
+            git clone --depth=1 -b master https://github.com/dibbla-agents/dibbla-public-templates.git $tmp;
+            Move-Item -Path (Join-Path $tmp 'expense-reporter-template-1') -Destination .;
+            Remove-Item -Recurse -Force $tmp;
+            Write-Host ('Cloned expense-reporter-template-1 into ' + (Get-Location).Path)
+          }"
+    depends_on: ["verify-git"]
+
+  - id: run-template-setup
+    name: "Run expense-reporter-template-1 setup pipeline"
+    type: command
+    run:
+      darwin: '"$DIBBLA_CMD" run ./dibbla-task.yaml'
+      windows: '"%DIBBLA_CMD%" run ./dibbla-task.yaml'
+    working_dir: "./expense-reporter-template-1"
+    depends_on: ["clone-template"]
