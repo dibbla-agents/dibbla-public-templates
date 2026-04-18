@@ -1,68 +1,230 @@
 version: "1"
 
-# Bootstrap task for the Starter CRM template.
+# Starter CRM template.
 #
 # Usage:
 #   mkdir my-crm && cd my-crm
 #   dibbla run https://raw.githubusercontent.com/dibbla-agents/dibbla-public-templates/master/crm.dibbla-task.yaml
-#
-# This file:
-#   1. Verifies git is installed.
-#   2. Clones the crm-template-1 subdirectory from this repo into the
-#      current working directory (idempotent).
-#   3. Recursively runs the template's own dibbla-task.yaml from inside
-#      the cloned directory.
+
+ports:
+  PORT:
+    preferred: 8150
+    description: "Go backend HTTP server"
+  VITE_PORT:
+    preferred: 5245
+    description: "Vite dev server"
+
+env:
+  ENV_HELLO_NAME:
+    description: "Name used by the /api/hello endpoint greeting"
+    default: "Dibbla"
 
 tools:
+  winget:
+    check: "winget --version"
+    # Pre-installed on Windows 10 (1809+) / Windows 11 — no install needed.
   git:
     check: "git --version"
     install:
-      darwin: "brew install git"
-      windows: "winget install --id Git.Git -e --source winget --accept-source-agreements --accept-package-agreements"
-    install_fallback:
       darwin: "xcode-select --install 2>/dev/null; until xcode-select -p >/dev/null 2>&1; do sleep 5; done"
+      windows: "winget install --id Git.Git --scope user --silent -e --source winget --accept-source-agreements --accept-package-agreements"
+    install_fallback:
+      darwin: "brew install git"
+      windows: "winget install --id Git.Git --silent -e --source winget --accept-source-agreements --accept-package-agreements"
+  node:
+    check: "node --version"
+    bin_path: "~/.local/node/bin"
+    install:
+      darwin: 'mkdir -p ~/.local && curl -fsSL "https://nodejs.org/dist/v20.18.0/node-v20.18.0-darwin-$(uname -m | sed s/x86_64/x64/).tar.gz" | tar -xz -C ~/.local && rm -rf ~/.local/node && mv ~/.local/node-v* ~/.local/node'
+      linux: 'mkdir -p ~/.local && curl -fsSL "https://nodejs.org/dist/v20.18.0/node-v20.18.0-linux-$(uname -m | sed -e s/x86_64/x64/ -e s/aarch64/arm64/).tar.xz" | tar -xJ -C ~/.local && rm -rf ~/.local/node && mv ~/.local/node-v* ~/.local/node'
+      windows: "winget install --id OpenJS.NodeJS.LTS --scope user --silent -e --source winget --accept-source-agreements --accept-package-agreements"
+    install_fallback:
+      darwin: "brew install node"
+      windows: "winget install --id OpenJS.NodeJS.LTS --silent -e --source winget --accept-source-agreements --accept-package-agreements"
+  go:
+    check: "go version"
+    bin_path: "~/.local/go/bin"
+    install:
+      darwin: 'mkdir -p ~/.local && rm -rf ~/.local/go && curl -fsSL "https://go.dev/dl/go1.26.2.darwin-$(uname -m | sed s/x86_64/amd64/).tar.gz" | tar -xz -C ~/.local'
+      linux: 'mkdir -p ~/.local && rm -rf ~/.local/go && curl -fsSL "https://go.dev/dl/go1.26.2.linux-$(uname -m | sed -e s/x86_64/amd64/ -e s/aarch64/arm64/).tar.gz" | tar -xz -C ~/.local'
+      windows: "winget install --id GoLang.Go --scope user --silent -e --source winget --accept-source-agreements --accept-package-agreements"
+    install_fallback:
+      darwin: "brew install go"
+      windows: "winget install --id GoLang.Go --silent -e --source winget --accept-source-agreements --accept-package-agreements"
+  dibbla:
+    check: "dibbla --version"
+    bin_path: "~/.local/bin"
+    install:
+      darwin: "curl -fsSL https://install.dibbla.com/install.sh | sh"
+      linux: "curl -fsSL https://install.dibbla.com/install.sh | sh"
+      windows: 'powershell -NoProfile -ExecutionPolicy Bypass -Command "irm https://install.dibbla.com/install.ps1 | iex"'
+    install_fallback:
+      darwin: "brew tap dibbla-agents/tap && brew install dibbla"
 
 steps:
+  # ── Tool verification ──────────────────────────────────────────────
   - id: verify-git
     name: "Check Git"
     type: tool_check
     tool: git
 
+  - id: verify-node
+    name: "Check Node.js"
+    type: tool_check
+    tool: node
+
+  - id: verify-go
+    name: "Check Go"
+    type: tool_check
+    tool: go
+
+  - id: verify-dibbla
+    name: "Check Dibbla"
+    type: tool_check
+    tool: dibbla
+
+  # ── Clone template files into CWD ──────────────────────────────────
   - id: clone-template
-    name: "Fetch crm-template-1 into current directory"
+    name: "Fetch template files"
     type: command
     run:
       darwin: |
         set -e
-        if [ -d crm-template-1 ]; then
-          echo "crm-template-1 already exists in $(pwd); skipping clone"
+        if [ -f main.go ]; then
+          echo "Template files already present in $(pwd); skipping clone"
         else
           tmp=$(mktemp -d)
           git clone --depth=1 -b master \
             https://github.com/dibbla-agents/dibbla-public-templates.git "$tmp"
-          mv "$tmp/crm-template-1" .
+          cp -a "$tmp/crm-template-1/." .
           rm -rf "$tmp"
-          echo "Cloned crm-template-1 into $(pwd)/crm-template-1"
+          echo "Template files cloned into $(pwd)"
         fi
       windows: |
         powershell -NoProfile -ExecutionPolicy Bypass -Command "
           $ErrorActionPreference = 'Stop';
-          if (Test-Path 'crm-template-1') {
-            Write-Host 'crm-template-1 already exists; skipping clone'
+          if (Test-Path 'main.go') {
+            Write-Host 'Template files already present; skipping clone'
           } else {
             $tmp = Join-Path $env:TEMP ([System.Guid]::NewGuid().ToString());
             git clone --depth=1 -b master https://github.com/dibbla-agents/dibbla-public-templates.git $tmp;
-            Move-Item -Path (Join-Path $tmp 'crm-template-1') -Destination .;
+            Copy-Item -Path (Join-Path $tmp 'crm-template-1\*') -Destination . -Recurse -Force;
             Remove-Item -Recurse -Force $tmp;
-            Write-Host ('Cloned crm-template-1 into ' + (Get-Location).Path)
+            Write-Host ('Template files cloned into ' + (Get-Location).Path)
           }"
     depends_on: ["verify-git"]
 
-  - id: run-template-setup
-    name: "Run crm-template-1 setup pipeline"
+  # ── AI editor skills ──────────────────────────────────────────────
+  - id: install-skills
+    name: "Install AI Editor Skills"
+    type: command
+    run: "npx -y skills add dibbla-agents/skills --skill dibbla -a claude-code -y && npx -y skills add dibbla-agents/skills --skill dibbla -a cursor -y && npx -y skills add dibbla-agents/skills --skill dibbla -a opencode -y"
+    depends_on: ["verify-node"]
+
+  # ── Dibbla update ─────────────────────────────────────────────────
+  - id: update-dibbla
+    name: "Update Dibbla"
     type: command
     run:
-      darwin: '"$DIBBLA_CMD" run ./dibbla-task.yaml'
-      windows: '"%DIBBLA_CMD%" run ./dibbla-task.yaml'
-    working_dir: "./crm-template-1"
-    depends_on: ["clone-template"]
+      darwin: "curl -fsSL https://install.dibbla.com/install.sh | sh 2>/dev/null || true"
+      linux: "curl -fsSL https://install.dibbla.com/install.sh | sh 2>/dev/null || true"
+      windows: "powershell -NoProfile -Command \"try { irm https://install.dibbla.com/install.ps1 | iex } catch {}; exit 0\""
+    depends_on: ["verify-dibbla"]
+
+  # ── Dibbla login ──────────────────────────────────────────────────
+  - id: dibbla-login
+    name: "Log in to Dibbla"
+    type: command
+    run:
+      darwin: "dibbla login --api-key=$DIBBLA_API_TOKEN"
+      linux: "dibbla login --api-key=$DIBBLA_API_TOKEN"
+      windows: "dibbla login --api-key=%DIBBLA_API_TOKEN%"
+    depends_on: ["verify-dibbla"]
+
+  # ── Environment setup ──────────────────────────────────────────────
+  - id: write-env
+    name: "Configure settings"
+    type: write_env
+
+  # ── Frontend build ─────────────────────────────────────────────────
+  - id: install-frontend-deps
+    name: "Install frontend packages"
+    type: command
+    run: "npm ci"
+    working_dir: "./frontend"
+    depends_on: ["clone-template", "verify-node"]
+    retry:
+      max_attempts: 2
+      delay: "5s"
+      on_output: "EPERM"
+
+  - id: build-frontend
+    name: "Build user interface"
+    type: command
+    run: "npm run build"
+    working_dir: "./frontend"
+    depends_on: ["install-frontend-deps"]
+
+  # ── Go build ───────────────────────────────────────────────────────
+  - id: go-mod-download
+    name: "Install backend packages"
+    type: command
+    run: "go mod download"
+    depends_on: ["clone-template", "verify-go"]
+
+  - id: build-go
+    name: "Build application"
+    type: command
+    run:
+      darwin: "go build -o ./bin/server main.go"
+      linux: "go build -o ./bin/server main.go"
+      windows: "go build -o ./bin/server.exe main.go"
+    env:
+      CGO_ENABLED: "0"
+    depends_on: ["build-frontend", "go-mod-download", "write-env"]
+
+
+  # ── Dev servers ────────────────────────────────────────────────────
+  - id: run-backend
+    name: "Start backend server"
+    type: command
+    mode: background
+    run:
+      darwin: "./bin/server"
+      linux: "./bin/server"
+      windows: ".\\bin\\server.exe"
+    env:
+      PORT: "8150"
+    depends_on: ["build-go"]
+
+  - id: start-frontend-dev
+    name: "Start frontend server"
+    type: command
+    mode: background
+    run: "npm run dev"
+    working_dir: "./frontend"
+    depends_on: ["install-frontend-deps"]
+
+  - id: wait-backend
+    name: "Waiting for backend server"
+    type: command
+    run:
+      darwin: 'for i in $(seq 1 30); do (echo > /dev/tcp/localhost/${PORT:-8150}) 2>/dev/null && exit 0; sleep 1; done; exit 1'
+      linux: 'bash -c ''for i in $(seq 1 30); do (echo > /dev/tcp/localhost/${PORT:-8150}) 2>/dev/null && exit 0; sleep 1; done; exit 1'''
+      windows: >-
+        powershell -NoProfile -Command
+        "$p = if ($env:PORT) { $env:PORT } else { '8150' };
+        for ($i = 0; $i -lt 30; $i++) {
+        try { $c = [System.Net.Sockets.TcpClient]::new(); $c.Connect('127.0.0.1', [int]$p); $c.Close(); exit 0 }
+        catch { Start-Sleep -Seconds 1 } };
+        exit 1"
+    depends_on: ["run-backend"]
+
+  - id: open-browser
+    name: "Open in browser"
+    type: command
+    run:
+      darwin: "sleep 2 && open http://localhost:${VITE_PORT:-5245}"
+      linux: "sleep 2 && xdg-open http://localhost:${VITE_PORT:-5245}"
+      windows: 'powershell -NoProfile -Command "Start-Sleep -Seconds 2; $p = if ($env:VITE_PORT) { $env:VITE_PORT } else { ''5245'' }; Start-Process (''http://localhost:'' + $p)"'
+    depends_on: ["start-frontend-dev", "wait-backend"]
