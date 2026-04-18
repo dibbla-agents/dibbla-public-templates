@@ -9,84 +9,68 @@ ports:
     description: "Vite dev server"
 
 tools:
-  brew:
-    check: "brew --version"
-    privileged: true
-    install:
-      darwin: 'NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"'
   winget:
     check: "winget --version"
     # Pre-installed on Windows 10 (1809+) / Windows 11 — no install needed.
   git:
     check: "git --version"
     install:
-      darwin: "brew install git"
-      windows: "winget install --id Git.Git -e --source winget --accept-source-agreements --accept-package-agreements"
-    install_fallback:
       darwin: "xcode-select --install 2>/dev/null; until xcode-select -p >/dev/null 2>&1; do sleep 5; done"
+      windows: "winget install --id Git.Git --scope user --silent -e --source winget --accept-source-agreements --accept-package-agreements"
+    install_fallback:
+      darwin: "brew install git"
+      windows: "winget install --id Git.Git --silent -e --source winget --accept-source-agreements --accept-package-agreements"
   node:
     check: "node --version"
     bin_path: "~/.local/node/bin"
     install:
-      darwin: "brew install node"
-      windows: "winget install --id OpenJS.NodeJS.LTS -e --source winget --accept-source-agreements --accept-package-agreements"
+      darwin: 'mkdir -p ~/.local && curl -fsSL "https://nodejs.org/dist/v20.18.0/node-v20.18.0-darwin-$(uname -m | sed s/x86_64/x64/).tar.gz" | tar -xz -C ~/.local && rm -rf ~/.local/node && mv ~/.local/node-v* ~/.local/node'
+      linux: 'mkdir -p ~/.local && curl -fsSL "https://nodejs.org/dist/v20.18.0/node-v20.18.0-linux-$(uname -m | sed -e s/x86_64/x64/ -e s/aarch64/arm64/).tar.xz" | tar -xJ -C ~/.local && rm -rf ~/.local/node && mv ~/.local/node-v* ~/.local/node'
+      windows: "winget install --id OpenJS.NodeJS.LTS --scope user --silent -e --source winget --accept-source-agreements --accept-package-agreements"
     install_fallback:
-      darwin: 'curl -fsSL "https://nodejs.org/dist/v20.18.0/node-v20.18.0-darwin-$(uname -m | sed s/x86_64/x64/).tar.gz" | tar -xz -C ~/.local && rm -rf ~/.local/node && mv ~/.local/node-v* ~/.local/node'
+      darwin: "brew install node"
+      windows: "winget install --id OpenJS.NodeJS.LTS --silent -e --source winget --accept-source-agreements --accept-package-agreements"
   go:
     check: "go version"
     bin_path: "~/.local/go/bin"
     install:
-      darwin: "brew install go"
-      windows: "winget install --id GoLang.Go -e --source winget --accept-source-agreements --accept-package-agreements"
+      darwin: 'mkdir -p ~/.local && rm -rf ~/.local/go && curl -fsSL "https://go.dev/dl/go1.26.2.darwin-$(uname -m | sed s/x86_64/amd64/).tar.gz" | tar -xz -C ~/.local'
+      linux: 'mkdir -p ~/.local && rm -rf ~/.local/go && curl -fsSL "https://go.dev/dl/go1.26.2.linux-$(uname -m | sed -e s/x86_64/amd64/ -e s/aarch64/arm64/).tar.gz" | tar -xz -C ~/.local'
+      windows: "winget install --id GoLang.Go --scope user --silent -e --source winget --accept-source-agreements --accept-package-agreements"
     install_fallback:
-      darwin: 'curl -fsSL "https://go.dev/dl/go1.26.2.darwin-$(uname -m | sed s/x86_64/amd64/).tar.gz" | tar -xz -C ~/.local'
+      darwin: "brew install go"
+      windows: "winget install --id GoLang.Go --silent -e --source winget --accept-source-agreements --accept-package-agreements"
   dibbla:
     check: "dibbla --version"
     bin_path: "~/.local/bin"
     install:
-      darwin: "brew tap dibbla-agents/tap && brew install dibbla"
+      darwin: "curl -fsSL https://install.dibbla.com/install.sh | sh"
+      linux: "curl -fsSL https://install.dibbla.com/install.sh | sh"
       windows: 'powershell -NoProfile -ExecutionPolicy Bypass -Command "irm https://install.dibbla.com/install.ps1 | iex"'
     install_fallback:
-      darwin: "curl -fsSL https://install.dibbla.com/install.sh | sh"
+      darwin: "brew tap dibbla-agents/tap && brew install dibbla"
 
 steps:
-  # ── Package manager verification ───────────────────────────────────
-  - id: verify-brew
-    name: "Check package manager"
-    type: tool_check
-    tool: brew
-    platforms: ["darwin"]
-
-  - id: verify-winget
-    name: "Check package manager"
-    type: tool_check
-    tool: winget
-    platforms: ["windows"]
-
   # ── Tool verification ──────────────────────────────────────────────
   - id: verify-git
     name: "Check Git"
     type: tool_check
     tool: git
-    depends_on: ["verify-brew", "verify-winget"]
 
   - id: verify-node
     name: "Check Node.js"
     type: tool_check
     tool: node
-    depends_on: ["verify-brew", "verify-winget"]
 
   - id: verify-go
     name: "Check Go"
     type: tool_check
     tool: go
-    depends_on: ["verify-brew", "verify-winget"]
 
   - id: verify-dibbla
     name: "Check Dibbla"
     type: tool_check
     tool: dibbla
-    depends_on: ["verify-brew", "verify-winget"]
 
 
   # ── AI editor skills ──────────────────────────────────────────────
@@ -101,7 +85,8 @@ steps:
     name: "Update Dibbla"
     type: command
     run:
-      darwin: "brew upgrade dibbla 2>/dev/null || true"
+      darwin: "curl -fsSL https://install.dibbla.com/install.sh | sh 2>/dev/null || true"
+      linux: "curl -fsSL https://install.dibbla.com/install.sh | sh 2>/dev/null || true"
       windows: "powershell -NoProfile -Command \"try { irm https://install.dibbla.com/install.ps1 | iex } catch {}; exit 0\""
     depends_on: ["verify-dibbla"]
 
@@ -111,6 +96,7 @@ steps:
     type: command
     run:
       darwin: "dibbla login --api-key=$DIBBLA_API_TOKEN"
+      linux: "dibbla login --api-key=$DIBBLA_API_TOKEN"
       windows: "dibbla login --api-key=%DIBBLA_API_TOKEN%"
     depends_on: ["verify-dibbla"]
 
@@ -145,6 +131,7 @@ steps:
     type: command
     run:
       darwin: "go build -o ./bin/server main.go"
+      linux: "go build -o ./bin/server main.go"
       windows: "go build -o ./bin/server.exe main.go"
     env:
       CGO_ENABLED: "0"
@@ -158,6 +145,7 @@ steps:
     mode: background
     run:
       darwin: "./bin/server"
+      linux: "./bin/server"
       windows: ".\\bin\\server.exe"
     env:
       PORT: "8090"
@@ -176,6 +164,7 @@ steps:
     type: command
     run:
       darwin: 'for i in $(seq 1 30); do (echo > /dev/tcp/localhost/${PORT:-8090}) 2>/dev/null && exit 0; sleep 1; done; exit 1'
+      linux: 'bash -c ''for i in $(seq 1 30); do (echo > /dev/tcp/localhost/${PORT:-8090}) 2>/dev/null && exit 0; sleep 1; done; exit 1'''
       windows: >-
         powershell -NoProfile -Command
         "$p = if ($env:PORT) { $env:PORT } else { '8090' };
@@ -190,5 +179,6 @@ steps:
     type: command
     run:
       darwin: "sleep 2 && open http://localhost:${VITE_PORT:-5185}"
+      linux: "sleep 2 && xdg-open http://localhost:${VITE_PORT:-5185}"
       windows: 'powershell -NoProfile -Command "Start-Sleep -Seconds 2; $p = if ($env:VITE_PORT) { $env:VITE_PORT } else { ''5185'' }; Start-Process (''http://localhost:'' + $p)"'
     depends_on: ["start-frontend-dev", "wait-backend"]
