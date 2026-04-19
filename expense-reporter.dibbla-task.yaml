@@ -111,10 +111,10 @@ steps:
 
   # ── AI editor skills ──────────────────────────────────────────────
   - id: install-skills
-    name: "Install AI Editor Skills"
+    name: "Install Dibbla Skill"
     type: command
-    run: "npx -y skills add dibbla-agents/skills --skill dibbla -a claude-code -y && npx -y skills add dibbla-agents/skills --skill dibbla -a cursor -y && npx -y skills add dibbla-agents/skills --skill dibbla -a opencode -y"
-    depends_on: ["verify-node"]
+    run: "dibbla skills install dibbla"
+    depends_on: ["update-dibbla"]
 
   # ── Dibbla update ─────────────────────────────────────────────────
   - id: update-dibbla
