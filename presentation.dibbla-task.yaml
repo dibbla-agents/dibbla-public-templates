@@ -98,6 +98,31 @@ steps:
     run: "npx -y skills add dibbla-agents/skills --skill dibbla -a claude-code -y && npx -y skills add dibbla-agents/skills --skill dibbla -a cursor -y && npx -y skills add dibbla-agents/skills --skill dibbla -a opencode -y"
     depends_on: ["verify-node"]
 
+  # ── Dibbla update ─────────────────────────────────────────────────
+  # Pulls the latest CLI release — ensures login flags used below are available.
+  - id: update-dibbla
+    name: "Update Dibbla"
+    type: command
+    run:
+      darwin: "curl -fsSL https://install.dibbla.com/install.sh | sh 2>/dev/null || true"
+      linux: "curl -fsSL https://install.dibbla.com/install.sh | sh 2>/dev/null || true"
+      windows: "powershell -NoProfile -Command \"try { irm https://install.dibbla.com/install.ps1 | iex } catch {}; exit 0\""
+    depends_on: ["verify-dibbla"]
+
+  # ── Dibbla login ──────────────────────────────────────────────────
+  # Writes DIBBLA_API_TOKEN + DIBBLA_API_URL to ./.env and patches .gitignore.
+  # --no-keychain keeps the user's OS keyring clean (Desktop app installs
+  # many templates over a project lifetime; we don't want to pollute it).
+  # Requires CLI ≥ v1.2.4 — the update-dibbla step above pulls the latest.
+  - id: dibbla-login
+    name: "Save Dibbla credentials to project .env"
+    type: command
+    run:
+      darwin: "dibbla login --api-key=$DIBBLA_API_TOKEN --api-url=$DIBBLA_AUTH_SERVICE_URL --write-env --no-keychain"
+      linux: "dibbla login --api-key=$DIBBLA_API_TOKEN --api-url=$DIBBLA_AUTH_SERVICE_URL --write-env --no-keychain"
+      windows: "dibbla login --api-key=%DIBBLA_API_TOKEN% --api-url=%DIBBLA_AUTH_SERVICE_URL% --write-env --no-keychain"
+    depends_on: ["verify-dibbla", "clone-template", "update-dibbla"]
+
   # ── Install dependencies ───────────────────────────────────────────
   - id: npm-install
     name: "Install packages"

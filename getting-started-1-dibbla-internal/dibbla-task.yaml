@@ -96,13 +96,16 @@ steps:
     depends_on: ["verify-dibbla"]
 
   # ── Dibbla login ──────────────────────────────────────────────────
+  # Writes DIBBLA_API_TOKEN + DIBBLA_API_URL to ./.env (merge, idempotent)
+  # and ensures ./.gitignore lists .env. --no-keychain avoids polluting the
+  # user's OS keyring. Requires CLI ≥ v1.2.4.
   - id: dibbla-login
-    name: "Log in to Dibbla"
+    name: "Save Dibbla credentials to project .env"
     type: command
     run:
-      darwin: "dibbla login --api-key=$DIBBLA_API_TOKEN"
-      linux: "dibbla login --api-key=$DIBBLA_API_TOKEN"
-      windows: "dibbla login --api-key=%DIBBLA_API_TOKEN%"
+      darwin: "dibbla login --api-key=$DIBBLA_API_TOKEN --api-url=$DIBBLA_AUTH_SERVICE_URL --write-env --no-keychain"
+      linux: "dibbla login --api-key=$DIBBLA_API_TOKEN --api-url=$DIBBLA_AUTH_SERVICE_URL --write-env --no-keychain"
+      windows: "dibbla login --api-key=%DIBBLA_API_TOKEN% --api-url=%DIBBLA_AUTH_SERVICE_URL% --write-env --no-keychain"
     depends_on: ["verify-dibbla"]
 
   # ── Environment setup ──────────────────────────────────────────────
