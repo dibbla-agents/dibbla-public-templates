@@ -95,6 +95,18 @@ steps:
           rm -rf "$tmp"
           echo "Template files cloned into $(pwd)"
         fi
+      linux: |
+        set -e
+        if [ -f main.go ]; then
+          echo "Template files already present in $(pwd); skipping clone"
+        else
+          tmp=$(mktemp -d)
+          git clone --depth=1 -b master \
+            https://github.com/dibbla-agents/dibbla-public-templates.git "$tmp"
+          cp -a "$tmp/getting-started-1/." .
+          rm -rf "$tmp"
+          echo "Template files cloned into $(pwd)"
+        fi
       windows: |
         powershell -NoProfile -ExecutionPolicy Bypass -Command "
           $ErrorActionPreference = 'Stop';
