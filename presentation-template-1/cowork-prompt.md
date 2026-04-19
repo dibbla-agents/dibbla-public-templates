@@ -1,12 +1,21 @@
-Set up a fresh Dibbla "presentation" project in this directory and open
-the frontend in a preview browser when it's running.
+Set up a fresh Dibbla "presentation" project in this directory and
+deploy it so the user can access it in their browser.
+
+IMPORTANT — environment constraints:
+- There is NO desktop browser in this environment. Steps that try to
+  open a browser (xdg-open, open) will fail — that is expected, ignore it.
+- Inbound network connections are blocked by the firewall. Dev servers
+  (npm run dev) are NOT accessible from the user's browser.
+  The only way to serve the app to the user is via `dibbla deploy`.
+- Dev servers are still useful for curl-based testing from inside
+  this environment, but not for visual/UI testing.
 
 Auth is already configured: DIBBLA_API_URL and DIBBLA_API_TOKEN are in
 ./.env. Since dibbla CLI v1.2.4 reads .env from CWD automatically, no
 separate `dibbla login` step is needed — don't attempt to log in.
 
-Do these steps in order. Don't skip step 2 and don't guess at later steps
-before reading the skill.
+Do these steps in order. Don't skip step 2 and don't guess at later
+steps before reading the skill.
 
 1. Install the dibbla CLI.
      curl -fsSL https://install.dibbla.com/install.sh | sh
@@ -17,9 +26,9 @@ before reading the skill.
    (must be >= v1.2.4)
 
 2. Install the dibbla skill into this project BEFORE doing anything else.
-   This is important: the skill teaches you how the CLI's template and run
-   commands work, which flags they accept, and how bootstrap yamls behave.
-   Without the skill, you will use outdated patterns.
+   This is important: the skill teaches you how the CLI's template, run,
+   and deploy commands work, which flags they accept, and how bootstrap
+   yamls behave. Without the skill, you will use outdated patterns.
      dibbla skills install dibbla
    After this completes, re-read the skill files it dropped (under
    .claude/skills/dibbla/ or the equivalent for your agent) before step 3.
@@ -28,26 +37,40 @@ before reading the skill.
    Using what the skill tells you, install the "presentation" template
    into this directory. The bootstrap yaml lives at:
      https://github.com/dibbla-agents/dibbla-public-templates/blob/master/presentation.dibbla-task.yaml
-   The contents of that yaml and its cloned subdirectory
-   (dibbla-public-templates/presentation-template-1/) are authoritative
-   for what steps will run, what ports are used, and what files land
-   where — consult the yaml when in doubt.
 
-   Expected end state after the template pipeline completes:
-   - A `presentation-template-1/` subdirectory with a Vite frontend
-   - Vite dev server running on port 5335 (VITE_PORT)
-   - Running as a background process started by the pipeline
+   Expect the open-browser step to fail — that's normal in this
+   environment. The template pipeline will still start the Vite dev
+   server; it's useful for curl verification but not for user-facing
+   access.
 
-   Note: 5335 is the *preferred* port declared in the yaml. The
-   steprunner may allocate an alternative if that port is in use. After
-   the pipeline finishes, read its output (or run `lsof -i :5335`)
-   to confirm the actual port.
+4. Deploy the application.
+   Run from the template subdirectory (presentation-template-1/):
+     dibbla deploy
+   This packages and deploys the app to dibbla.com. On success it
+   prints a URL (https://<alias>.dibbla.com) — report this URL back
+   to the user.
 
-4. Open the frontend in a preview browser.
-   Point the preview at http://localhost:<VITE_PORT> (default 5335).
-   If the pipeline already opened a browser window, that's fine — verify
-   the page loads and shows the slide deck.
+   If the default alias is already taken, append incrementing numbers
+   until you find a free one:
+     dibbla deploy --alias presentation1
+     dibbla deploy --alias presentation2
+   and so on.
 
-Report back: the actual port used, whether the server is reachable,
+   For subsequent changes, use:
+     dibbla deploy --update
+
+5. Update CLAUDE.md with environment notes.
+   Create or append to CLAUDE.md in the project root with these notes
+   so that future sessions know the constraints:
+
+   - No browser available — `xdg-open` / `open` will fail, ignore it
+   - Firewall blocks inbound connections — dev servers (npm run dev)
+     are NOT accessible from the user's browser
+   - To show UI changes to the user, rebuild and run:
+       dibbla deploy --update
+   - curl against localhost is fine for testing
+   - Deployed URL: <the URL from step 4>
+
+Report back: the deploy URL, whether the deployed app is reachable,
 and a one-line summary of what the frontend shows. If any step fails,
 stop and report the error instead of continuing.
