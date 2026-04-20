@@ -17,29 +17,8 @@ separate `dibbla login` step is needed — don't attempt to log in.
 Do these steps in order. Don't skip step 2 and don't guess at later
 steps before reading the skill.
 
-1. Install the dibbla CLI by downloading the latest release binary
-   directly from GitHub. (install.dibbla.com is not in the default
-   Cowork allowlist, so don't use the install.sh one-liner here —
-   fetch the binary from the GitHub releases page instead.)
-
-     # Detect platform
-     OS=$(uname -s | tr '[:upper:]' '[:lower:]')
-     ARCH=$(uname -m)
-     case "$ARCH" in
-       x86_64)          ARCH=amd64 ;;
-       aarch64|arm64)   ARCH=arm64 ;;
-     esac
-
-     # Look up the latest release tag
-     VERSION=$(curl -fsSL https://api.github.com/repos/dibbla-agents/dibbla-cli/releases/latest \
-       | sed -n 's/.*"tag_name": *"v\([^"]*\)".*/\1/p')
-
-     # Download and extract the binary into ~/.local/bin
-     mkdir -p "$HOME/.local/bin"
-     curl -fsSL "https://github.com/dibbla-agents/dibbla-cli/releases/download/v${VERSION}/dibbla_${VERSION}_${OS}_${ARCH}.tar.gz" \
-       | tar -xzf - -C "$HOME/.local/bin" dibbla
-     chmod +x "$HOME/.local/bin/dibbla"
-
+1. Install the dibbla CLI.
+     curl -fsSL https://install.dibbla.com/install.sh | sh
    Then ensure ~/.local/bin is on PATH for this shell:
      export PATH="$HOME/.local/bin:$PATH"
    Verify:
