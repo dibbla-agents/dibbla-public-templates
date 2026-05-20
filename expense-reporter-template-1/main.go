@@ -154,36 +154,80 @@ func (pc *PlatformClient) doRequest(method, path string, body io.Reader, content
 	return pc.httpClient.Do(req)
 }
 
-// ExecuteWorkflow sends extracted receipt text to the expense-extractor workflow.
-func (pc *PlatformClient) ExecuteWorkflow(workflowPath string, receiptsText string, authToken string) ([]Expense, error) {
+const expenseExtractorSystemPrompt = `You are an expense report assistant. You read receipt text and extract structured expense data.
+Always respond with valid JSON only — no markdown, no explanation, no code fences.
+Return a JSON array where each element has these fields:
+- vendor: company or merchant name
+- amount: total amount as a number (after tax)
+- currency: 3-letter ISO code (e.g. USD, EUR, SEK)
+- date: in YYYY-MM-DD format
+- category: one of Travel, Meals, Office Supplies, Software, Equipment, Transportation, Accommodation, Other
+- description: brief description of the purchase
+- receipt_ref: receipt or invoice number if present, otherwise null
+- vat: VAT/tax amount as a number if listed separately, otherwise null
+If you cannot determine a field, use null.`
+
+// ExtractExpenses calls Claude via the Dibbla AI Gateway to extract structured
+// expense data from raw receipt text. The user's Dibbla token authenticates the
+// call; the gateway swaps it for the platform-managed Anthropic key.
+func (pc *PlatformClient) ExtractExpenses(receiptsText string, authToken string) ([]Expense, error) {
+	aiGatewayURL := strings.TrimRight(os.Getenv("DIBBLA_AI_GATEWAY_URL"), "/")
+	if aiGatewayURL == "" {
+		aiGatewayURL = "https://ai.dibbla.net"
+	}
+
 	body, _ := json.Marshal(map[string]any{
-		"receipts_text": receiptsText,
+		"model":      "claude-sonnet-4-6",
+		"max_tokens": 4096,
+		"system":     expenseExtractorSystemPrompt,
+		"messages": []map[string]any{
+			{"role": "user", "content": receiptsText},
+		},
 	})
 
-	resp, err := pc.doRequest("POST", workflowPath, bytes.NewReader(body), "application/json", authToken)
+	req, err := http.NewRequest("POST", aiGatewayURL+"/anthropic/v1/messages", bytes.NewReader(body))
 	if err != nil {
-		return nil, fmt.Errorf("workflow execute failed: %w", err)
+		return nil, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("x-api-key", authToken)
+	req.Header.Set("anthropic-version", "2023-06-01")
+	if alias := os.Getenv("DIBBLA_ALIAS"); alias != "" {
+		req.Header.Set("X-Dibbla-App", alias)
+	}
+
+	resp, err := pc.httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("ai gateway request failed: %w", err)
 	}
 	defer resp.Body.Close()
 
 	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("read workflow response: %w", err)
+		return nil, fmt.Errorf("read ai gateway response: %w", err)
 	}
-
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("workflow returned %d: %s", resp.StatusCode, string(respBody))
+		return nil, fmt.Errorf("ai gateway returned %d: %s", resp.StatusCode, string(respBody))
 	}
 
 	var result struct {
-		Expenses string `json:"expenses"`
+		Content []struct {
+			Type string `json:"type"`
+			Text string `json:"text"`
+		} `json:"content"`
 	}
 	if err := json.Unmarshal(respBody, &result); err != nil {
-		return nil, fmt.Errorf("decode workflow response: %w", err)
+		return nil, fmt.Errorf("decode ai gateway response: %w", err)
 	}
 
-	// Strip markdown code fences if the agent wrapped the JSON
-	raw := strings.TrimSpace(result.Expenses)
+	var raw string
+	for _, c := range result.Content {
+		if c.Type == "text" {
+			raw = c.Text
+			break
+		}
+	}
+	raw = strings.TrimSpace(raw)
 	if strings.HasPrefix(raw, "```") {
 		raw = strings.TrimPrefix(raw, "```json")
 		raw = strings.TrimPrefix(raw, "```")
@@ -759,15 +803,10 @@ func main() {
 			return c.Status(400).JSON(fiber.Map{"error": "could not extract text from any PDF"})
 		}
 
-		// 2. Execute workflow
-		workflowPath := os.Getenv("WORKFLOW_EXEC_PATH")
-		if workflowPath == "" {
-			workflowPath = "/api/wf/execute/expense-extractor/9tv6xu67"
-		}
-
-		expenses, err := platform.ExecuteWorkflow(workflowPath, receiptsText, authToken)
+		// 2. Extract expenses via the Dibbla AI Gateway
+		expenses, err := platform.ExtractExpenses(receiptsText, authToken)
 		if err != nil {
-			log.Printf("Workflow execution failed: %v", err)
+			log.Printf("Expense extraction failed: %v", err)
 			return c.Status(500).JSON(fiber.Map{"error": "failed to extract expenses from receipts"})
 		}
 
