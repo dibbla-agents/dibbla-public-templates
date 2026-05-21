@@ -19,7 +19,7 @@ This project is a Go Fiber backend with a React/TypeScript/Tailwind frontend. Th
 
 ## Conventions
 
-- **Go:** Uses `godotenv` for optional `.env`. AI inference goes directly to the Dibbla AI Gateway: `DIBBLA_AI_GATEWAY_URL` (auto-injected on deploy, defaults to `https://ai.dibbla.net`); `DIBBLA_ALIAS` is auto-injected on deploy and sent as `X-Dibbla-App` for per-app attribution. `GATEWAY_URL` defaults to `http://localhost:3456` and is only used for the Google OAuth handshake; `PORT` defaults to 80 (8210 in dev).
+- **Go:** Uses `godotenv` for optional `.env`. AI inference goes directly to the Dibbla AI Gateway: `DIBBLA_AI_GATEWAY_URL` defaults to `https://ai.dibbla.net`. `DIBBLA_ALIAS` is sent as the `X-Dibbla-App` header for per-app attribution in the gateway ledger — **must be passed explicitly on deploy** (see Deployment below); without it calls show up as `source=external`. `GATEWAY_URL` defaults to `http://localhost:3456` and is only used for the Google OAuth handshake; `PORT` defaults to 80 (8210 in dev).
 - **API:** REST under `/api/` — `POST /api/upload`, `GET /api/uploads`, `DELETE /api/uploads/:id`, `GET /api/check-scopes`, `POST /api/generate-report`. Add new routes in `main.go` before the static/filesystem middleware.
 - **Frontend:** Use Tailwind v4 with `@theme` in `frontend/src/index.css`. Prefer design tokens: `dibbla-green`, `dibbla-dark`, `dibbla-card`.
 - **Static/SPA:** Keep the existing order: serve filesystem at `/`, then catch-all to `index.html` for client-side routing.
@@ -67,12 +67,12 @@ When the user asks to deploy, use the **Dibbla CLI skill** (see `.claude/skills/
 - Deploy with `dibbla deploy .` (no `--yes` needed). Use `--force` to overwrite an existing deployment with the same alias.
 - **Always pass `--require-login`** so the app requires authentication. This app uses the authenticated user's identity to obtain Google OAuth tokens via the Dibbla gateway.
 - **Always pass `--google-scopes https://www.googleapis.com/auth/spreadsheets`** so the user is prompted to grant Google Sheets access on login. Without this scope the app cannot create expense report spreadsheets.
-- The app reads `DIBBLA_AI_GATEWAY_URL` and `DIBBLA_ALIAS` directly from the runtime — the platform injects both, so you don't need to pass them via `-e`.
+- **Always pass `-e DIBBLA_ALIAS=<same value as --alias>`** so the backend can stamp `X-Dibbla-App` on AI Gateway calls. Without this the call shows up as `source=external` in the `ai.dibbla.net/console` ledger instead of being attributed to the deployed app.
 - If the app listens on a port other than 80, set it with `--port <port>` (match the port in the Dockerfile).
 - For updates to an existing deployment, use `dibbla update`; run `dibbla --skill-prompt` for full options.
 - **Example deploy command:**
   ```
-  dibbla deploy . --alias <name> --require-login --google-scopes https://www.googleapis.com/auth/spreadsheets
+  dibbla deploy . --alias <name> --require-login --google-scopes https://www.googleapis.com/auth/spreadsheets -e DIBBLA_ALIAS=<name>
   ```
 
 ## Docker & Dibbla build (lessons learned)
