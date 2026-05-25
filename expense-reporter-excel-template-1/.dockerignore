@@ -1,0 +1,11 @@
+node_modules
+frontend/node_modules
+.agents
+.claude
+dist
+*.md
+.git
+.gitignore
+bin
+tmp
+getting-started-1

@@ -1,0 +1,30 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+*.tsbuildinfo
+
+# Go
+/server
+/bin/
+# `go build .` output (binary named after the module dir)
+/expense-reporter-excel-template-1
+
+# IDE
+.vscode/
+.idea/
+
+# Environment
+.env
+
+# Claude Code
+.claude/
+.agents/
+
+# Dev runtime state (backend port/pid files)
+.dev/
+
+# OS
+.DS_Store
+Thumbs.db
