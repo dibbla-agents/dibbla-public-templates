@@ -66,13 +66,13 @@ When the user asks to deploy, use the **Dibbla CLI skill** (see `.claude/skills/
 
 - Deploy with `dibbla deploy .` (no `--yes` needed). Use `--force` to overwrite an existing deployment with the same alias.
 - **Always pass `--require-login`** so the app requires authentication. This app uses the authenticated user's identity to obtain Google OAuth tokens via the Dibbla gateway.
-- **Always pass `--google-scopes https://www.googleapis.com/auth/spreadsheets`** so the user is prompted to grant Google Sheets access on login. Without this scope the app cannot create expense report spreadsheets.
+- **Always pass `--google-scopes https://www.googleapis.com/auth/drive.file`** so the user is prompted to grant access on login. This per-file scope lets the app create and write the expense report spreadsheet it makes; without it the app cannot create expense report spreadsheets.
 - **Always pass `-e DIBBLA_ALIAS=<same value as --alias>`** so the backend can stamp `X-Dibbla-App` on AI Gateway calls. Without this the call shows up as `source=external` in the `ai.dibbla.net/console` ledger instead of being attributed to the deployed app.
 - If the app listens on a port other than 80, set it with `--port <port>` (match the port in the Dockerfile).
 - For updates to an existing deployment, use `dibbla update`; run `dibbla --skill-prompt` for full options.
 - **Example deploy command:**
   ```
-  dibbla deploy . --alias <name> --require-login --google-scopes https://www.googleapis.com/auth/spreadsheets -e DIBBLA_ALIAS=<name>
+  dibbla deploy . --alias <name> --require-login --google-scopes https://www.googleapis.com/auth/drive.file -e DIBBLA_ALIAS=<name>
   ```
 
 ## Docker & Dibbla build (lessons learned)

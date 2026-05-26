@@ -243,7 +243,10 @@ func (pc *PlatformClient) ExtractExpenses(receiptsText string, authToken string)
 	return expenses, nil
 }
 
-const requiredGoogleScope = "https://www.googleapis.com/auth/spreadsheets"
+// drive.file grants per-file access to spreadsheets this app creates — sufficient
+// to create and write expense reports without the restricted-scope verification that
+// the broad spreadsheets scope requires.
+const requiredGoogleScope = "https://www.googleapis.com/auth/drive.file"
 
 // MissingScopesError is returned when the user hasn't granted the required Google scopes.
 type MissingScopesError struct {
