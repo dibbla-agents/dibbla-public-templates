@@ -1,3 +1,7 @@
+---
+subtitle: Turn PDF receipts into a tidy Google Sheet expense report.
+---
+
 # Expense Reporter
 
 Upload PDF receipts, and an AI agent will read each one, extract expense details (vendor, amount, currency, date, category, VAT, receipt reference), and generate a formatted Google Sheet summary in your Google Drive.

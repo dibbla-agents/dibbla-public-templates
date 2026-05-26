@@ -1,0 +1,22 @@
+# Compiled Go binary (11MB+ — would hard-fail deploy with VCS_FILTERED)
+bin/
+/server
+
+# Build output
+dist/
+*.tsbuildinfo
+
+# Dependencies
+node_modules/
+frontend/node_modules/
+
+# Local / generated
+.env
+.dev/
+tmp/
+.claude/
+.agents/
+
+# OS
+.DS_Store
+Thumbs.db
