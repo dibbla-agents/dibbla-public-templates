@@ -170,7 +170,7 @@ If you cannot determine a field, use null.`
 // ExtractExpenses calls Claude via the Dibbla AI Gateway to extract structured
 // expense data from raw receipt text. The user's Dibbla token authenticates the
 // call; the gateway swaps it for the platform-managed Anthropic key.
-func (pc *PlatformClient) ExtractExpenses(receiptsText string, authToken string) ([]Expense, error) {
+func (pc *PlatformClient) ExtractExpenses(receiptsText string, authToken string, hostname string) ([]Expense, error) {
 	aiGatewayURL := strings.TrimRight(os.Getenv("DIBBLA_AI_GATEWAY_URL"), "/")
 	if aiGatewayURL == "" {
 		aiGatewayURL = "https://ai.dibbla.net"
@@ -192,7 +192,17 @@ func (pc *PlatformClient) ExtractExpenses(receiptsText string, authToken string)
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("x-api-key", authToken)
 	req.Header.Set("anthropic-version", "2023-06-01")
-	if alias := os.Getenv("DIBBLA_ALIAS"); alias != "" {
+	alias := os.Getenv("DIBBLA_ALIAS")
+	if alias == "" {
+		// Fall back to the subdomain the request came in on (e.g.
+		// `expense-reporter-foo.dibbla.net` → `expense-reporter-foo`).
+		// Lets the gateway attribute the call to the deployed app even
+		// when DIBBLA_ALIAS wasn't passed at deploy time.
+		if host, _, _ := strings.Cut(hostname, ":"); strings.HasSuffix(host, ".dibbla.net") {
+			alias = strings.TrimSuffix(host, ".dibbla.net")
+		}
+	}
+	if alias != "" {
 		req.Header.Set("X-Dibbla-App", alias)
 	}
 
@@ -807,7 +817,7 @@ func main() {
 		}
 
 		// 2. Extract expenses via the Dibbla AI Gateway
-		expenses, err := platform.ExtractExpenses(receiptsText, authToken)
+		expenses, err := platform.ExtractExpenses(receiptsText, authToken, c.Hostname())
 		if err != nil {
 			log.Printf("Expense extraction failed: %v", err)
 			return c.Status(500).JSON(fiber.Map{"error": "failed to extract expenses from receipts"})
