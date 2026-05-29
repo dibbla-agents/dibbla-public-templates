@@ -1,0 +1,24 @@
+# Compiled .NET output (bin/ holds the published app + runtime deps, 10MB+ —
+# would hard-fail deploy with VCS_FILTERED). The Dibbla builder rebuilds via
+# the Dockerfile, so none of this needs to be uploaded.
+bin/
+obj/
+
+# Build output
+dist/
+*.tsbuildinfo
+
+# Dependencies
+node_modules/
+frontend/node_modules/
+
+# Local / generated
+.env
+.dev/
+tmp/
+.claude/
+.agents/
+
+# OS
+.DS_Store
+Thumbs.db
