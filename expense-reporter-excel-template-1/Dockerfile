@@ -7,21 +7,24 @@ RUN npm ci
 COPY frontend/ ./
 RUN npm run build
 
-# ---- Stage 2: Build Go Binary ----
-FROM golang:1.24-alpine AS go-builder
+# ---- Stage 2: Build .NET Backend ----
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS dotnet-builder
 
 WORKDIR /app
-COPY go.mod go.sum ./
-RUN go mod download
-COPY main.go ./
+COPY ExpenseReporter.csproj ./
+RUN dotnet restore
+COPY *.cs ./
+COPY appsettings.json ./
+RUN dotnet publish -c Release -o /publish
+
+# ---- Stage 3: Final Runtime Image ----
+FROM mcr.microsoft.com/dotnet/aspnet:8.0
+
+WORKDIR /app
+COPY --from=dotnet-builder /publish ./
+# Place the built frontend next to the DLL so it's served as static files.
 COPY --from=frontend-builder /app/dist ./dist/
-RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o /server main.go
-
-# ---- Stage 3: Final Minimal Image ----
-FROM alpine:3.20
-
-RUN apk --no-cache add ca-certificates
-COPY --from=go-builder /server /server
 
 EXPOSE 80
-ENTRYPOINT ["/server"]
+ENV PORT=80
+ENTRYPOINT ["dotnet", "ExpenseReporter.dll"]

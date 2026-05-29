@@ -5,11 +5,10 @@ node_modules/
 dist/
 *.tsbuildinfo
 
-# Go
-/server
-/bin/
-# `go build .` output (binary named after the module dir)
-/expense-reporter-excel-template-1
+# .NET
+bin/
+obj/
+*.user
 
 # IDE
 .vscode/

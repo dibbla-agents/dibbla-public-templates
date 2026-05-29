@@ -3,7 +3,7 @@ version: "1"
 ports:
   PORT:
     preferred: 8210
-    description: "Go backend HTTP server"
+    description: ".NET backend HTTP server"
   VITE_PORT:
     preferred: 5305
     description: "Vite dev server"
@@ -32,14 +32,15 @@ tools:
       windows: "winget install --id OpenJS.NodeJS.LTS -e --source winget --accept-source-agreements --accept-package-agreements"
     install_fallback:
       darwin: 'curl -fsSL "https://nodejs.org/dist/v20.18.0/node-v20.18.0-darwin-$(uname -m | sed s/x86_64/x64/).tar.gz" | tar -xz -C ~/.local && rm -rf ~/.local/node && mv ~/.local/node-v* ~/.local/node'
-  go:
-    check: "go version"
-    bin_path: "~/.local/go/bin"
+  dotnet:
+    check: "dotnet --version"
+    bin_path: "~/.dotnet"
     install:
-      darwin: "brew install go"
-      windows: "winget install --id GoLang.Go -e --source winget --accept-source-agreements --accept-package-agreements"
+      darwin: "brew install dotnet@8"
+      windows: "winget install --id Microsoft.DotNet.SDK.8 -e --source winget --accept-source-agreements --accept-package-agreements"
     install_fallback:
-      darwin: 'curl -fsSL "https://go.dev/dl/go1.26.2.darwin-$(uname -m | sed s/x86_64/amd64/).tar.gz" | tar -xz -C ~/.local'
+      darwin: "curl -fsSL https://dot.net/v1/dotnet-install.sh | bash -s -- --channel 8.0 --install-dir ~/.dotnet"
+      windows: 'powershell -NoProfile -ExecutionPolicy Bypass -Command "& { iwr https://dot.net/v1/dotnet-install.ps1 -OutFile $env:TEMP\dotnet-install.ps1; & $env:TEMP\dotnet-install.ps1 -Channel 8.0 -InstallDir $env:USERPROFILE\.dotnet }"
   dibbla:
     check: "dibbla --version"
     bin_path: "~/.local/bin"
@@ -76,10 +77,10 @@ steps:
     tool: node
     depends_on: ["verify-brew", "verify-winget"]
 
-  - id: verify-go
-    name: "Check Go"
+  - id: verify-dotnet
+    name: "Check .NET SDK"
     type: tool_check
-    tool: go
+    tool: dotnet
     depends_on: ["verify-brew", "verify-winget"]
 
   - id: verify-dibbla
@@ -166,27 +167,23 @@ steps:
     working_dir: "./frontend"
     depends_on: ["install-frontend-deps"]
 
-  # ── Go build ───────────────────────────────────────────────────────
-  - id: go-mod-download
+  # ── .NET build ─────────────────────────────────────────────────────
+  - id: dotnet-restore
     name: "Install backend packages"
     type: command
-    run: "go mod download"
-    depends_on: ["verify-go"]
+    run: "dotnet restore"
+    depends_on: ["verify-dotnet"]
 
-  - id: build-go
+  - id: build-dotnet
     name: "Build application"
     type: command
-    run:
-      darwin: "go build -o ./bin/server main.go"
-      windows: "go build -o ./bin/server.exe main.go"
-    env:
-      CGO_ENABLED: "0"
-    depends_on: ["build-frontend", "go-mod-download"]
+    run: "dotnet publish -c Release -o ./bin"
+    depends_on: ["build-frontend", "dotnet-restore"]
 
 
   # ── Dev servers ────────────────────────────────────────────────────
   # Reclaim the dev ports before starting servers. If a previous run left a
-  # ./bin/server or Vite process behind, kill it. If an unrelated process
+  # backend (ExpenseReporter) or Vite process behind, kill it. If an unrelated process
   # holds the port, fail with a clear message instead of silently falling
   # back — otherwise the frontend proxy and the backend would drift apart.
   - id: reclaim-ports
@@ -227,7 +224,7 @@ steps:
           if [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null; then
             cmd=$(ps -p "$pid" -o command= 2>/dev/null || echo "")
             case "$cmd" in
-              *bin/server*|*bin\\server*)
+              *ExpenseReporter*)
                 echo "Reclaiming backend PID $pid from previous run"
                 kill "$pid" 2>/dev/null || true
                 sleep 1
@@ -237,7 +234,7 @@ steps:
           fi
           rm -f .dev/backend.pid .dev/backend.port
         fi
-        reclaim "${PORT:-8210}" "backend" "bin/server"
+        reclaim "${PORT:-8210}" "backend" "ExpenseReporter"
         reclaim "${VITE_PORT:-5305}" "Vite dev server" "vite|node.*vite"
       windows: >-
         powershell -NoProfile -Command
@@ -262,7 +259,7 @@ steps:
           $pid = (Get-Content .dev\backend.pid -ErrorAction SilentlyContinue) -as [int];
           if ($pid) {
             $p = Get-Process -Id $pid -ErrorAction SilentlyContinue;
-            if ($p -and ($p.Path -match 'bin\\server')) {
+            if ($p -and (($p.Path + ' ' + ($p.CommandLine 2>$null)) -match 'ExpenseReporter')) {
               Write-Host \"Reclaiming backend PID $pid from previous run\";
               Stop-Process -Id $pid -Force -ErrorAction SilentlyContinue;
             }
@@ -271,17 +268,17 @@ steps:
         };
         $bp = if ($env:PORT) { [int]$env:PORT } else { 8210 };
         $vp = if ($env:VITE_PORT) { [int]$env:VITE_PORT } else { 5305 };
-        Reclaim $bp 'backend' 'bin\\server';
+        Reclaim $bp 'backend' 'ExpenseReporter';
         Reclaim $vp 'Vite dev server' 'vite'"
-    depends_on: ["build-go", "install-frontend-deps"]
+    depends_on: ["build-dotnet", "install-frontend-deps"]
 
   - id: run-backend
     name: "Start backend server"
     type: command
     mode: background
     run:
-      darwin: "./bin/server"
-      windows: ".\\bin\\server.exe"
+      darwin: "dotnet ./bin/ExpenseReporter.dll"
+      windows: "dotnet .\\bin\\ExpenseReporter.dll"
     env:
       PORT: "8210"
     depends_on: ["reclaim-ports"]
