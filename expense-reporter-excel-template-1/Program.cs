@@ -333,10 +333,13 @@ static string GetAuthToken(HttpContext ctx)
 string ResolveLoginUrl(string loginUrl) =>
     loginUrl.StartsWith('/') ? platform.GatewayUrl + loginUrl : loginUrl;
 
-// The URL the Microsoft consent flow returns the browser to. Deployed, the
-// request host is the public URL and works as-is. In local dev the Vite proxy
-// (changeOrigin) hides the browser's real origin, so set APP_PUBLIC_URL (e.g.
-// http://localhost:5305) to round-trip consent back to the running frontend.
+// The URL the Microsoft consent flow returns the browser to. Behind the Dibbla
+// proxy the Host header is rewritten to the internal backend (req.Host =
+// backendURL.Host), and the public host/scheme arrive in X-Forwarded-*; using
+// ctx.Request.Host here would emit the internal k8s domain and break the consent
+// round-trip. So prefer the forwarded values. APP_PUBLIC_URL overrides both for
+// local dev, where the Vite proxy (changeOrigin) hides the browser's origin —
+// set it to e.g. http://localhost:5305.
 static string GetReturnTo(HttpContext ctx)
 {
     var pub = Environment.GetEnvironmentVariable("APP_PUBLIC_URL");
@@ -344,7 +347,31 @@ static string GetReturnTo(HttpContext ctx)
     {
         return pub.TrimEnd('/');
     }
-    return $"{ctx.Request.Scheme}://{ctx.Request.Host.Value}";
+
+    var host = FirstForwardedValue(ctx.Request.Headers["X-Forwarded-Host"]);
+    if (string.IsNullOrEmpty(host))
+    {
+        host = ctx.Request.Host.Value;
+    }
+    var scheme = FirstForwardedValue(ctx.Request.Headers["X-Forwarded-Proto"]);
+    if (string.IsNullOrEmpty(scheme))
+    {
+        scheme = ctx.Request.Scheme;
+    }
+    return $"{scheme}://{host}";
+}
+
+// X-Forwarded-* headers can carry a comma-separated proxy chain; the original
+// client-facing value is the first entry.
+static string FirstForwardedValue(Microsoft.Extensions.Primitives.StringValues header)
+{
+    var raw = header.ToString();
+    if (string.IsNullOrEmpty(raw))
+    {
+        return "";
+    }
+    var comma = raw.IndexOf(',');
+    return (comma >= 0 ? raw[..comma] : raw).Trim();
 }
 
 static string ResolveDistPath()
