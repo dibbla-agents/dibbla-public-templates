@@ -439,7 +439,7 @@ steps:
     name: "Open in browser"
     type: command
     run:
-      darwin: "sleep 2 && open http://localhost:${VITE_PORT:-5305}"
-      linux: "sleep 2 && xdg-open http://localhost:${VITE_PORT:-5305}"
-      windows: 'powershell -NoProfile -Command "Start-Sleep -Seconds 2; $p = if ($env:VITE_PORT) { $env:VITE_PORT } else { ''5305'' }; Start-Process (''http://localhost:'' + $p)"'
+      darwin: 'if [ -n "${CI}${HEADLESS}${DIBBLA_NO_OPEN}" ]; then echo "[open-browser] skipped (CI/HEADLESS/DIBBLA_NO_OPEN set); visit http://localhost:${VITE_PORT:-5305}"; exit 0; fi; sleep 2; open "http://localhost:${VITE_PORT:-5305}" || echo "[open-browser] could not open a browser; visit http://localhost:${VITE_PORT:-5305}"'
+      linux: 'if [ -n "${CI}${HEADLESS}${DIBBLA_NO_OPEN}" ] || { [ -z "$DISPLAY" ] && [ -z "$WAYLAND_DISPLAY" ]; }; then echo "[open-browser] skipped (headless/CI); visit http://localhost:${VITE_PORT:-5305}"; exit 0; fi; sleep 2; xdg-open "http://localhost:${VITE_PORT:-5305}" || echo "[open-browser] could not open a browser; visit http://localhost:${VITE_PORT:-5305}"'
+      windows: 'powershell -NoProfile -Command "if ($env:CI -or $env:HEADLESS -or $env:DIBBLA_NO_OPEN) { Write-Host ''[open-browser] skipped''; exit 0 }; Start-Sleep -Seconds 2; $p = if ($env:VITE_PORT) { $env:VITE_PORT } else { ''5305'' }; try { Start-Process (''http://localhost:'' + $p) } catch { Write-Host (''[open-browser] could not open a browser; visit http://localhost:'' + $p) }"'
     depends_on: ["start-frontend-dev", "wait-backend"]
