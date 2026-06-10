@@ -89,18 +89,21 @@ steps:
           rm -rf "$tmp"
           echo "Template files cloned into $(pwd)"
         fi
-      windows: |
-        powershell -NoProfile -ExecutionPolicy Bypass -Command "
-          $ErrorActionPreference = 'Stop';
-          if (Test-Path 'package.json') {
-            Write-Host 'Template files already present; skipping clone'
-          } else {
-            $tmp = Join-Path $env:TEMP ([System.Guid]::NewGuid().ToString());
-            git clone --depth=1 -b master https://github.com/dibbla-agents/dibbla-public-templates.git $tmp;
-            Copy-Item -Path (Join-Path $tmp 'presentation-template-1\*') -Destination . -Recurse -Force;
-            Remove-Item -Recurse -Force $tmp;
-            Write-Host ('Template files cloned into ' + (Get-Location).Path)
-          }"
+      # NOTE: must stay a folded (>-) single-line scalar — the Windows
+      # executor runs commands via `cmd /C` and cmd silently stops at the
+      # first newline, reporting success without running anything.
+      windows: >-
+        powershell -NoProfile -ExecutionPolicy Bypass -Command
+        "$ErrorActionPreference = 'Stop';
+        if (Test-Path 'package.json') {
+        Write-Host 'Template files already present; skipping clone'
+        } else {
+        $tmp = Join-Path $env:TEMP ([System.Guid]::NewGuid().ToString());
+        git clone --depth=1 -b master https://github.com/dibbla-agents/dibbla-public-templates.git $tmp;
+        Copy-Item -Path (Join-Path $tmp 'presentation-template-1\*') -Destination . -Recurse -Force;
+        Remove-Item -Recurse -Force $tmp;
+        Write-Host ('Template files cloned into ' + (Get-Location).Path)
+        }"
     depends_on: ["verify-git"]
 
   # ── AI editor skills ──────────────────────────────────────────────
