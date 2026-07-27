@@ -29,13 +29,31 @@ function App() {
   }
 
   useEffect(() => {
-    fetch("/api/hello")
-      .then((res) => {
+    let cancelled = false;
+
+    // The backend may still be coming up on first load (or restarting after an
+    // edit). Retry a few times before showing the error screen — a single
+    // failed fetch would otherwise stick until the user reloads by hand.
+    async function loadGreeting(attempt = 0) {
+      try {
+        const res = await fetch("/api/hello");
         if (!res.ok) throw new Error(`Server responded with ${res.status}`);
-        return res.json();
-      })
-      .then((data) => setGreeting(data.message))
-      .catch((err) => setError(err.message));
+        const data = await res.json();
+        if (!cancelled) setGreeting(data.message);
+      } catch (err) {
+        if (cancelled) return;
+        if (attempt < 4) {
+          setTimeout(() => loadGreeting(attempt + 1), 500 * (attempt + 1));
+          return;
+        }
+        setError(err instanceof Error ? err.message : String(err));
+      }
+    }
+
+    loadGreeting();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   return (

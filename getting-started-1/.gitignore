@@ -9,6 +9,9 @@ dist/
 /server
 /bin/
 
+# Dev runtime state (backend port/pid published for the Vite proxy)
+.dev/
+
 # IDE
 .vscode/
 .idea/
