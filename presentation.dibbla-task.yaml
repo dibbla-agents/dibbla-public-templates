@@ -157,18 +157,107 @@ steps:
     depends_on: ["npm-install"]
 
   # ── Dev server ─────────────────────────────────────────────────────
+  # Reclaim the dev port from a previous run of this template. Vite runs with
+  # strictPort, so a leftover dev server would otherwise make this run fail —
+  # and without it, a silently relocated Vite leaves open-browser pointing at
+  # a dead URL.
+  - id: reclaim-port
+    name: "Reclaim dev port"
+    type: command
+    run:
+      darwin: |
+        set -u
+        port="${VITE_PORT:-5335}"
+        holder=$(lsof -ti tcp:"$port" -sTCP:LISTEN 2>/dev/null || true)
+        for pid in $holder; do
+          cmd=$(ps -p "$pid" -o command= 2>/dev/null || echo "")
+          if echo "$cmd" | grep -Eq "vite|node.*vite"; then
+            echo "Reclaiming Vite dev server port $port from stale PID $pid"
+            kill "$pid" 2>/dev/null || true
+            sleep 1
+            kill -9 "$pid" 2>/dev/null || true
+          else
+            echo "ERROR: port $port is held by PID $pid — not a previous run of this template." >&2
+            echo "       Process: $cmd" >&2
+            echo "       Stop that process (e.g. 'kill $pid') and retry." >&2
+            exit 1
+          fi
+        done
+      linux: |
+        set -u
+        port="${VITE_PORT:-5335}"
+        holder=$(lsof -ti tcp:"$port" -sTCP:LISTEN 2>/dev/null || true)
+        for pid in $holder; do
+          cmd=$(ps -p "$pid" -o command= 2>/dev/null || echo "")
+          if echo "$cmd" | grep -Eq "vite|node.*vite"; then
+            echo "Reclaiming Vite dev server port $port from stale PID $pid"
+            kill "$pid" 2>/dev/null || true
+            sleep 1
+            kill -9 "$pid" 2>/dev/null || true
+          else
+            echo "ERROR: port $port is held by PID $pid — not a previous run of this template." >&2
+            echo "       Process: $cmd" >&2
+            echo "       Stop that process (e.g. 'kill $pid') and retry." >&2
+            exit 1
+          fi
+        done
+      windows: >-
+        powershell -NoProfile -Command
+        "$vp = if ($env:VITE_PORT) { [int]$env:VITE_PORT } else { 5335 };
+        $conns = Get-NetTCPConnection -LocalPort $vp -State Listen -ErrorAction SilentlyContinue;
+        foreach ($c in $conns) {
+        $p = Get-Process -Id $c.OwningProcess -ErrorAction SilentlyContinue;
+        if (-not $p) { continue };
+        $cmd = ($p.Path + ' ' + $p.ProcessName);
+        if ($cmd -match 'vite|node') {
+        Write-Host \"Reclaiming Vite dev server port $vp from stale PID $($p.Id)\";
+        Stop-Process -Id $p.Id -Force -ErrorAction SilentlyContinue
+        } else {
+        Write-Error \"Port $vp is held by PID $($p.Id) ($($p.ProcessName)). Stop that process and retry.\";
+        exit 1 } }"
+    depends_on: ["npm-install"]
+
   - id: start-dev-server
     name: "Start frontend server"
     type: command
     mode: background
     run: "npm run dev"
-    depends_on: ["npm-install"]
+    depends_on: ["reclaim-port"]
+
+  # Confirm the dev server actually answers on the port the browser will open.
+  - id: wait-frontend
+    name: "Waiting for frontend server"
+    type: command
+    run:
+      darwin: |
+        for i in $(seq 1 60); do
+          curl -fsS -o /dev/null "http://localhost:${VITE_PORT:-5335}/" 2>/dev/null && exit 0
+          sleep 1
+        done
+        echo "ERROR: the dev server never answered on port ${VITE_PORT:-5335}." >&2
+        exit 1
+      linux: |
+        for i in $(seq 1 60); do
+          curl -fsS -o /dev/null "http://localhost:${VITE_PORT:-5335}/" 2>/dev/null && exit 0
+          sleep 1
+        done
+        echo "ERROR: the dev server never answered on port ${VITE_PORT:-5335}." >&2
+        exit 1
+      windows: >-
+        powershell -NoProfile -Command
+        "$vp = if ($env:VITE_PORT) { $env:VITE_PORT } else { '5335' };
+        for ($i = 0; $i -lt 60; $i++) {
+        try { Invoke-WebRequest -UseBasicParsing -TimeoutSec 3 -Uri ('http://localhost:' + $vp + '/') | Out-Null; exit 0 } catch { };
+        Start-Sleep -Seconds 1 };
+        Write-Error ('The dev server never answered on port ' + $vp + '.');
+        exit 1"
+    depends_on: ["start-dev-server"]
 
   - id: open-browser
     name: "Open in browser"
     type: command
     run:
-      darwin: "sleep 2 && open http://localhost:${VITE_PORT:-5335}"
-      linux: "sleep 2 && xdg-open http://localhost:${VITE_PORT:-5335}"
-      windows: 'powershell -NoProfile -Command "Start-Sleep -Seconds 2; $p = if ($env:VITE_PORT) { $env:VITE_PORT } else { ''5335'' }; Start-Process (''http://localhost:'' + $p)"'
-    depends_on: ["start-dev-server"]
+      darwin: 'if [ -n "${CI}${HEADLESS}${DIBBLA_NO_OPEN}" ]; then echo "[open-browser] skipped (CI/HEADLESS/DIBBLA_NO_OPEN set); visit http://localhost:${VITE_PORT:-5335}"; exit 0; fi; sleep 2; open "http://localhost:${VITE_PORT:-5335}" || echo "[open-browser] could not open a browser; visit http://localhost:${VITE_PORT:-5335}"'
+      linux: 'if [ -n "${CI}${HEADLESS}${DIBBLA_NO_OPEN}" ] || { [ -z "$DISPLAY" ] && [ -z "$WAYLAND_DISPLAY" ]; }; then echo "[open-browser] skipped (headless/CI); visit http://localhost:${VITE_PORT:-5335}"; exit 0; fi; sleep 2; xdg-open "http://localhost:${VITE_PORT:-5335}" || echo "[open-browser] could not open a browser; visit http://localhost:${VITE_PORT:-5335}"'
+      windows: 'powershell -NoProfile -Command "if ($env:CI -or $env:HEADLESS -or $env:DIBBLA_NO_OPEN) { Write-Host ''[open-browser] skipped''; exit 0 }; Start-Sleep -Seconds 2; $p = if ($env:VITE_PORT) { $env:VITE_PORT } else { ''5335'' }; try { Start-Process (''http://localhost:'' + $p) } catch { Write-Host (''[open-browser] could not open a browser; visit http://localhost:'' + $p) }"'
+    depends_on: ["wait-frontend"]

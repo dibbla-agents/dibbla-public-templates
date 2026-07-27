@@ -39,13 +39,15 @@ This project is a Go Fiber backend with a React/TypeScript/Tailwind frontend. Th
 
 ## Dev servers & ports (IMPORTANT for local runs)
 
-Port handling is self-healing so non-technical users can start the app without hitting port conflicts:
+The dev ports are a contract, so non-technical users get a working app on the first try:
 
-- **Backend publishes its actual port.** On startup, `main.go` writes the bound port and PID to `.dev/backend.port` and `.dev/backend.pid`. These files are cleaned up on shutdown (SIGINT/SIGTERM). If the preferred port (8210) is taken, the backend falls back to 8211, 8212, … up to 20 tries.
-- **Vite proxy reads `.dev/backend.port` dynamically.** `frontend/vite.config.ts` uses a `router` callback so `/api` always forwards to the backend's real port, even if it fell back. `strictPort: true` on Vite means the dev server fails loudly if 5305 is taken (no silent switching).
-- **Pre-flight in `dibbla-task.yaml` (`reclaim-ports` step).** Before starting servers, any stale `./bin/server` or `vite` process from a previous run is killed. Ports held by unrelated processes cause a clear error — never auto-killed.
+- **Backend binds exactly `PORT`.** The Dibbla task allocates it and points the Vite proxy at the same value. If that port is taken the backend exits with a clear error instead of silently moving to another one — a moving backend is what leaves the browser on the app's error screen. It publishes the bound port and PID to `.dev/backend.port` and `.dev/backend.pid`, cleaned up on shutdown (SIGINT/SIGTERM).
+- **Vite uses `strictPort`.** The dev server fails loudly if 5305 is taken rather than silently switching, so the URL the task opens is always the one Vite is on.
+- **Pre-flight (`reclaim-ports` step).** Before starting servers, stale `./bin/server` and `vite` processes from a previous run are killed. Ports held by unrelated processes cause a clear error — never auto-killed.
+- **Readiness is end-to-end (`wait-frontend` step).** The task polls `/api/uploads` *through the Vite proxy* before opening the browser, so a broken proxy fails the install instead of the user.
 - **Do not hardcode `8210` on the frontend.** Use relative `/api/...` paths (Vite proxies them). If you need the backend URL in a script, read `.dev/backend.port`.
-- **To stop cleanly:** rerun the dibbla task (pre-flight reclaims stale processes), or manually `kill $(cat .dev/backend.pid)`.
+- **Starting servers by hand:** `PORT=8210 go run main.go` and `PORT=8210 VITE_PORT=5305 npm run dev` in `frontend/` — both processes need `PORT`, or the proxy points at the wrong place.
+- **To stop cleanly:** rerun the dibbla task (pre-flight reclaims stale processes), or `kill $(cat .dev/backend.pid)`.
 
 When changing the frontend, rebuild (`npm run build` in `frontend/`) before running or building the Go app so `dist/` is up to date.
 
@@ -80,7 +82,7 @@ When the user asks to deploy, use the **Dibbla CLI skill** (see `.claude/skills/
 - **Dockerfile must include all Go packages:** Copy every package the app needs (e.g. `COPY db/ ./db/`). Build the module with `go build .`, not `go build main.go`, so imports like `expense-reporter-template-1/db` resolve.
 - **Go version alignment:** The Go version in `go.mod` and the Docker image (e.g. `golang:1.24-alpine`) must satisfy all dependencies. If the build fails with "requires go >= 1.24.0", use Go 1.24 in both; do not mix `go 1.23` with images or vendor trees that require 1.24.
 - **Dibbla builder:** Prefer `go mod download` in the Dockerfile (with `ENV GOPROXY=https://proxy.golang.org,direct`) over `-mod=vendor`. Vendored builds can fail on Dibbla when vendor/modules.txt has a higher Go requirement than the image.
-- **Local Vite proxy:** The frontend proxies `/api` to the backend port from `.dev/backend.port` (or `PORT` env, default 8210). The dibbla task sets `PORT=8210` and the proxy self-heals if the backend falls back. When running backend manually, use `PORT=8210 go run main.go`.
+- **Local Vite proxy:** The frontend proxies `/api` to the backend port from `.dev/backend.port` (or `PORT` env, default 8210). The dibbla task sets `PORT=8210` for both processes. When running them manually, `PORT` must be set for the backend *and* for `npm run dev` — otherwise the proxy points somewhere else and you get "http proxy error: /api/...".
 
 ## Maintaining rules and skills
 
