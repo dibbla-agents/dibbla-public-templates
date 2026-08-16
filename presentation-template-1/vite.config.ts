@@ -15,7 +15,11 @@ export default defineConfig({
   },
   server: {
     host: 'localhost',
-    port: parseInt(process.env.VITE_PORT || '5173'),
+    port: parseInt(process.env.VITE_PORT || '5335'),
+    // Fail loudly instead of silently moving to the next free port — the
+    // dibbla task opens the browser at VITE_PORT, so a silent switch would
+    // land the user on a dead URL.
+    strictPort: true,
   },
   build: {
     outDir: 'dist',

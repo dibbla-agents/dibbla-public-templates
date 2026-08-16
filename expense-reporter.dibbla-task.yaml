@@ -438,6 +438,40 @@ steps:
         exit 1"
     depends_on: ["run-backend"]
 
+  # Verify the exact chain the browser will use: Vite dev server → /api proxy →
+  # Go backend. A healthy backend on its own is not enough — if the proxy points
+  # at a different port the browser lands straight on an error state.
+  - id: wait-frontend
+    name: "Waiting for frontend server"
+    type: command
+    run:
+      darwin: |
+        for i in $(seq 1 60); do
+          curl -fsS "http://localhost:${VITE_PORT:-5305}/api/uploads" 2>/dev/null | grep -q "files" && exit 0
+          sleep 1
+        done
+        echo "ERROR: the frontend could not reach the backend through the Vite proxy on port ${VITE_PORT:-5305}." >&2
+        echo "       backend port: $(cat .dev/backend.port 2>/dev/null || echo unknown), expected PORT=${PORT:-8210}" >&2
+        exit 1
+      linux: |
+        for i in $(seq 1 60); do
+          curl -fsS "http://localhost:${VITE_PORT:-5305}/api/uploads" 2>/dev/null | grep -q "files" && exit 0
+          sleep 1
+        done
+        echo "ERROR: the frontend could not reach the backend through the Vite proxy on port ${VITE_PORT:-5305}." >&2
+        echo "       backend port: $(cat .dev/backend.port 2>/dev/null || echo unknown), expected PORT=${PORT:-8210}" >&2
+        exit 1
+      windows: >-
+        powershell -NoProfile -Command
+        "$vp = if ($env:VITE_PORT) { $env:VITE_PORT } else { '5305' };
+        for ($i = 0; $i -lt 60; $i++) {
+        try { $r = Invoke-WebRequest -UseBasicParsing -TimeoutSec 3 -Uri ('http://localhost:' + $vp + '/api/uploads');
+        if ($r.Content -match 'files') { exit 0 } } catch { };
+        Start-Sleep -Seconds 1 };
+        Write-Error ('The frontend could not reach the backend through the Vite proxy on port ' + $vp + '.');
+        exit 1"
+    depends_on: ["start-frontend-dev", "wait-backend"]
+
   - id: open-browser
     name: "Open in browser"
     type: command
@@ -445,4 +479,4 @@ steps:
       darwin: 'if [ -n "${CI}${HEADLESS}${DIBBLA_NO_OPEN}" ]; then echo "[open-browser] skipped (CI/HEADLESS/DIBBLA_NO_OPEN set); visit http://localhost:${VITE_PORT:-5305}"; exit 0; fi; sleep 2; open "http://localhost:${VITE_PORT:-5305}" || echo "[open-browser] could not open a browser; visit http://localhost:${VITE_PORT:-5305}"'
       linux: 'if [ -n "${CI}${HEADLESS}${DIBBLA_NO_OPEN}" ] || { [ -z "$DISPLAY" ] && [ -z "$WAYLAND_DISPLAY" ]; }; then echo "[open-browser] skipped (headless/CI); visit http://localhost:${VITE_PORT:-5305}"; exit 0; fi; sleep 2; xdg-open "http://localhost:${VITE_PORT:-5305}" || echo "[open-browser] could not open a browser; visit http://localhost:${VITE_PORT:-5305}"'
       windows: 'powershell -NoProfile -Command "if ($env:CI -or $env:HEADLESS -or $env:DIBBLA_NO_OPEN) { Write-Host ''[open-browser] skipped''; exit 0 }; Start-Sleep -Seconds 2; $p = if ($env:VITE_PORT) { $env:VITE_PORT } else { ''5305'' }; try { Start-Process (''http://localhost:'' + $p) } catch { Write-Host (''[open-browser] could not open a browser; visit http://localhost:'' + $p) }"'
-    depends_on: ["start-frontend-dev", "wait-backend"]
+    depends_on: ["wait-frontend"]

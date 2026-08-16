@@ -19,7 +19,7 @@ This project is a Go Fiber backend with a React/TypeScript/Tailwind frontend. Th
 
 ## Conventions
 
-- **Go:** Uses `godotenv` for optional `.env`. `ENV_HELLO_NAME` is required; `PORT` defaults to 80 (8080 in dev).
+- **Go:** Uses `godotenv` for optional `.env`. `ENV_HELLO_NAME` is required; `PORT` defaults to 80 (8150 in dev — set by the Dibbla task).
 - **API:** REST under `/api/` (e.g. `GET /api/hello`). Add new routes in `main.go` before the static/filesystem middleware.
 - **Frontend:** Use Tailwind v4 with `@theme` in `frontend/src/index.css`. Prefer design tokens: `dibbla-green`, `dibbla-dark`, `dibbla-card`.
 - **Static/SPA:** Keep the existing order: serve filesystem at `/`, then catch-all to `index.html` for client-side routing.
@@ -34,8 +34,20 @@ This project is a Go Fiber backend with a React/TypeScript/Tailwind frontend. Th
 ## Workflow
 
 - **Local run:** `cd frontend && npm install && npm run build && cd ..` then `go run main.go` (or use Dibbla task).
-- **Dev:** Backend on 8080, Vite dev server on 5173 with API proxy to backend.
+- **Dev:** Backend on 8150, Vite dev server on 5245 with API proxy to backend.
 - **Docker:** `docker build -t getting-started-1 .` — ensure `dist/` exists (frontend built) before building image or Go binary.
+
+## Dev servers & ports (IMPORTANT for local runs)
+
+The dev ports are a contract, so non-technical users get a working app on the first try:
+
+- **Backend binds exactly `PORT`.** The Dibbla task allocates it and points the Vite proxy at the same value. If that port is taken the backend exits with a clear error instead of silently moving to another one — a moving backend is what leaves the browser on the app's error screen. It publishes the bound port and PID to `.dev/backend.port` and `.dev/backend.pid`, cleaned up on shutdown (SIGINT/SIGTERM).
+- **Vite uses `strictPort`.** The dev server fails loudly if 5245 is taken rather than silently switching, so the URL the task opens is always the one Vite is on.
+- **Pre-flight (`reclaim-ports` step).** Before starting servers, stale `./bin/server` and `vite` processes from a previous run are killed. Ports held by unrelated processes cause a clear error — never auto-killed.
+- **Readiness is end-to-end (`wait-frontend` step).** The task polls `/api/hello` *through the Vite proxy* before opening the browser, so a broken proxy fails the install instead of the user.
+- **Do not hardcode `8150` on the frontend.** Use relative `/api/...` paths (Vite proxies them). If you need the backend URL in a script, read `.dev/backend.port`.
+- **Starting servers by hand:** `PORT=8150 go run main.go` and `PORT=8150 VITE_PORT=5245 npm run dev` in `frontend/` — both processes need `PORT`, or the proxy points at the wrong place.
+- **To stop cleanly:** rerun the dibbla task (pre-flight reclaims stale processes), or `kill $(cat .dev/backend.pid)`.
 
 When changing the frontend, rebuild (`npm run build` in `frontend/`) before running or building the Go app so `dist/` is up to date.
 
@@ -50,7 +62,7 @@ If the user asks to add a database:
 
 ## Deployment
 
-**Do not deploy unless the user explicitly asks.** After making changes, assume the user wants to test locally first. Point them to the local dev servers (backend on port 8080, Vite on port 5175) and remind them to hard-reload the browser (Cmd+Shift+R / Ctrl+Shift+R) to bypass the cache if frontend changes aren't showing.
+**Do not deploy unless the user explicitly asks.** After making changes, assume the user wants to test locally first. Point them to the local dev servers (backend on port 8150, Vite on port 5245) and remind them to hard-reload the browser (Cmd+Shift+R / Ctrl+Shift+R) to bypass the cache if frontend changes aren't showing.
 
 Dibbla is pre-installed via the `dibbla-task.yaml` setup steps (you will find the path to where it is installed there). Do not reinstall it.
 
@@ -70,7 +82,7 @@ When the user asks to deploy, use the **Dibbla CLI skill** (see `.claude/skills/
 - **Dockerfile must include all Go packages:** Copy every package the app needs (e.g. `COPY db/ ./db/`). Build the module with `go build .`, not `go build main.go`, so imports like `getting-started-1/db` resolve.
 - **Go version alignment:** The Go version in `go.mod` and the Docker image (e.g. `golang:1.24-alpine`) must satisfy all dependencies. If the build fails with "requires go >= 1.24.0", use Go 1.24 in both; do not mix `go 1.23` with images or vendor trees that require 1.24.
 - **Dibbla builder:** Prefer `go mod download` in the Dockerfile (with `ENV GOPROXY=https://proxy.golang.org,direct`) over `-mod=vendor`. Vendored builds can fail on Dibbla when vendor/modules.txt has a higher Go requirement than the image.
-- **Local Vite proxy:** The frontend proxies `/api` to `http://127.0.0.1:8080`. Start the backend with `PORT=8080 go run main.go` so the proxy works; otherwise you get "http proxy error: /api/...".
+- **Local Vite proxy:** The frontend proxies `/api` to the backend port from `.dev/backend.port` (or `PORT` env, default 8150). The dibbla task sets `PORT=8150`. When running the backend manually, use `PORT=8150 go run main.go` and start Vite with the same `PORT` in its environment.
 - **Mounted `dist/` files may be read-only:** When working on a mounted volume, Vite cannot overwrite existing files in `dist/`. Build to a temp directory instead: `npx vite build --outDir /tmp/dist --emptyOutDir` from `frontend/`, then copy the output back into `dist/`.
 
 ## Theming
