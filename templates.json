@@ -48,6 +48,18 @@
       "template_path": "presentation-template-1",
       "icon_url": "https://raw.githubusercontent.com/dibbla-agents/dibbla-public-templates/master/presentation-template-1/icon.svg",
       "readme_url": "https://raw.githubusercontent.com/dibbla-agents/dibbla-public-templates/master/presentation-template-1/README.md"
+    },
+    {
+      "id": "incident-desk",
+      "name": "Incident Desk",
+      "description": "An incident desk backed by Postgres: browse, filter, and read incidents across your service fleet. Ships with AI summarise/triage stubs and a rollups view — the starting point for the \"Build it\" tutorial.",
+      "category": "starter",
+      "bootstrap_url": "https://raw.githubusercontent.com/dibbla-agents/dibbla-public-templates/master/incident-desk.dibbla-task.yaml",
+      "cowork_prompt_url": "https://raw.githubusercontent.com/dibbla-agents/dibbla-public-templates/master/incident-desk-template-1/cowork-prompt.md",
+      "repo_url": "https://github.com/dibbla-agents/dibbla-public-templates.git",
+      "template_path": "incident-desk-template-1",
+      "icon_url": "https://raw.githubusercontent.com/dibbla-agents/dibbla-public-templates/master/incident-desk-template-1/icon.svg",
+      "readme_url": "https://raw.githubusercontent.com/dibbla-agents/dibbla-public-templates/master/incident-desk-template-1/README.md"
     }
   ]
 }

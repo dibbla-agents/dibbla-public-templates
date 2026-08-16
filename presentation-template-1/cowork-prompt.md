@@ -43,8 +43,19 @@ steps before reading the skill.
    server; it's useful for curl verification but not for user-facing
    access.
 
-4. Deploy the application.
-   Run from the template subdirectory (presentation-template-1/):
+4. Write the pre-deploy gate artefacts, THEN deploy.
+   `dibbla deploy` refuses to upload unless BOTH of these exist at the deploy
+   root, so write them first (do NOT use --skip-review). See the skill files
+   .claude/skills/dibbla/guardrails.md and .claude/skills/dibbla/user-docs.md.
+
+   a. REVIEW.md — run the guardrails checklist from the skill and write the
+      report to REVIEW.md (the template ships an example; replace it with your
+      real findings).
+   b. docs/index.md — the end-user handbook, with a valid `subtitle:`
+      frontmatter (one sentence, ≤140 bytes, no placeholder text). The template
+      ships an example; rewrite it for this app.
+
+   Then deploy from the template subdirectory (presentation-template-1/):
      dibbla deploy
    This packages and deploys the app to dibbla.com. On success it
    prints a URL (https://<alias>.dibbla.com) — report this URL back

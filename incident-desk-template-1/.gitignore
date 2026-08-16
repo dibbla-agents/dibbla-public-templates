@@ -1,0 +1,28 @@
+# Dependencies
+node_modules/
+frontend/node_modules/
+
+# Build output
+dist/
+*.tsbuildinfo
+
+# Go
+/server
+/bin/
+# `go build .` writes a binary named after the module — ignore it
+/incident-desk-template-1
+
+# Dev runtime state (backend port/pid published for the dev tooling)
+.dev/
+tmp/
+
+# IDE
+.vscode/
+.idea/
+
+# Environment
+.env
+
+# OS
+.DS_Store
+Thumbs.db

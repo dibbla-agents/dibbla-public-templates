@@ -46,8 +46,19 @@ steps before reading the skill.
    After the pipeline finishes, verify the backend responds:
      curl -s http://localhost:8210 || echo "backend not reachable"
 
-4. Deploy the application.
-   Run from the template subdirectory (expense-reporter-template-1/):
+4. Write the pre-deploy gate artefacts, THEN deploy.
+   `dibbla deploy` refuses to upload unless BOTH of these exist at the deploy
+   root, so write them first (do NOT use --skip-review). See the skill files
+   .claude/skills/dibbla/guardrails.md and .claude/skills/dibbla/user-docs.md.
+
+   a. REVIEW.md — run the guardrails checklist from the skill and write the
+      report to REVIEW.md (the template ships an example; replace it with your
+      real findings).
+   b. APP.md — this template already ships the end-user handbook as APP.md.
+      Keep its `subtitle:` frontmatter valid (one sentence, ≤140 bytes, no
+      placeholder text) and update the page for your app. Do not delete it.
+
+   Then deploy from the template subdirectory (expense-reporter-template-1/):
      dibbla deploy
    This packages and deploys the app to dibbla.com. On success it
    prints a URL (https://<alias>.dibbla.com) — report this URL back

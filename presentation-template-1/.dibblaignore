@@ -1,13 +1,8 @@
 # Files excluded from the archive uploaded by `dibbla deploy`.
 # A live DIBBLA_API_TOKEN lives in .env — it must never reach a build context.
 .env
-node_modules/
-frontend/node_modules/
 dist/
-bin/
-tmp/
-.dev/
-/server
+node_modules/
 .git
 .gitignore
 .claude/
