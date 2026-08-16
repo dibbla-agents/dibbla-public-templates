@@ -1,0 +1,14 @@
+node_modules
+frontend/node_modules
+dist
+.git
+.gitignore
+.dev/
+bin/
+tmp/
+.env
+.claude/
+.agents/
+# NOTE: do NOT add `*.md` here. REVIEW.md and docs/ must reach the build
+# context so the Dockerfile can copy them into the image and the platform can
+# render the handbook.

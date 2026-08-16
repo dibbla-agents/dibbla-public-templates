@@ -1,0 +1,21 @@
+# Files excluded from the archive uploaded by `dibbla deploy`.
+# A live DIBBLA_API_TOKEN lives in .env — it must never reach a build context.
+.env
+bin/
+dist/
+node_modules/
+frontend/node_modules/
+.dev/
+tmp/
+/server
+# `go build .` (bare, e.g. while poking around) writes an ~11MB binary named
+# after the module dir; the Dockerfile and the dibbla-task build to /server and
+# ./bin/server instead, but exclude the stray so a bare build never trips the
+# 10MB VCS_FILTERED limit on deploy. Mirrors .gitignore.
+/incident-desk-template-1
+*.tsbuildinfo
+.git
+.gitignore
+.claude/
+.agents/
+.DS_Store

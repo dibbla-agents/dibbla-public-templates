@@ -1,5 +1,7 @@
 node_modules
 dist
-*.md
 .git
 .gitignore
+.env
+# NOTE: do NOT exclude `*.md` — REVIEW.md and docs/ must reach the build
+# context so the pre-deploy handbook renders after deploy.

@@ -3,9 +3,10 @@ frontend/node_modules
 .agents
 .claude
 dist
-*.md
 .git
 .gitignore
 bin
 tmp
-getting-started-1
+.env
+# NOTE: do NOT exclude `*.md` — REVIEW.md and APP.md must reach the build
+# context so the pre-deploy handbook renders after deploy.
