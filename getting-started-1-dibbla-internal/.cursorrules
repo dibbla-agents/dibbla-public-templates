@@ -46,7 +46,7 @@ If the user asks to add a database:
 - **ORM:** Use GORM. Add the dependency and open the DB in `main.go` (or a small `db` package) using a connection string from the environment.
 - **Connection string:** Do not hardcode. Read from an env var (e.g. `DATABASE_URL` or `DB_CONNECTION`). To get the value from Dibbla, use the **Dibbla CLI skill** and run e.g. `dibbla secrets get DB_CONNECTION` if a secret with that name exists.
 - **Create and manage databases via Dibbla only:** Do not add custom SQL or Postgres provisioning code. Use the Dibbla CLI so the app’s database gets the right setup (including pgvector). First check existing databases to avoid name conflicts: `dibbla db list`. Create with `dibbla db create <db_name>`. **Database names** must match `^[a-z][a-z0-9_]{0,62}$` (lowercase, digits, underscores only; no hyphens — use e.g. `garden_demo` not `garden-demo`). See `.claude/skills/dibbla/SKILL.md` and `dibbla --skill-prompt` for full docs.
-- **Local dev:** Use the same env var in `.env` (e.g. a local Postgres URL). Document the variable in `.env.example` if needed.
+- **Local dev:** `dibbla env pull` writes the app's values from Dibbla (secrets, `DATABASE_URL_*`, `DIBBLA_*`) to `.env.local`, which the app loads and git ignores. Add the variable's name with a comment to `.env.example` (names only, committed). A local run then uses the app's real database — say so, and offer a local Postgres (override `DATABASE_URL_*` in `.env.local`) if isolation is wanted.
 
 ## Deployment
 
