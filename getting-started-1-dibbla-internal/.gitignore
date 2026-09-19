@@ -13,8 +13,9 @@ dist/
 .vscode/
 .idea/
 
-# Environment
+# Environment — values live in Dibbla; .env.local is what `dibbla env pull` writes here
 .env
+.env.local
 
 # OS
 .DS_Store

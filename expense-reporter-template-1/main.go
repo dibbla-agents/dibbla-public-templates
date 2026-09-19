@@ -654,6 +654,9 @@ func getAuthToken(c *fiber.Ctx) string {
 // ---------------------------------------------------------------------------
 
 func main() {
+	// .env.local is what `dibbla env pull` writes (the app's values from Dibbla);
+	// a plain .env still works. Neither overrides a variable already set.
+	_ = godotenv.Load(".env.local")
 	_ = godotenv.Load()
 
 	store := NewSessionStore()

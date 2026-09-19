@@ -23,6 +23,9 @@ var embedDist embed.FS
 
 func main() {
 	// Load .env file if present (ignore error — in production env vars are set directly)
+	// .env.local is what `dibbla env pull` writes (the app's values from Dibbla);
+	// a plain .env still works. Neither overrides a variable already set.
+	_ = godotenv.Load(".env.local")
 	_ = godotenv.Load()
 
 	app := fiber.New(fiber.Config{
