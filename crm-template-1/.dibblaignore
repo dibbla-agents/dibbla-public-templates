@@ -9,7 +9,6 @@ frontend/node_modules/
 tmp/
 /server
 .git
-.gitignore
 .claude/
 .agents/
 .DS_Store
