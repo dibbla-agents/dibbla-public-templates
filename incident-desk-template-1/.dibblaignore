@@ -15,7 +15,6 @@ tmp/
 /incident-desk-template-1
 *.tsbuildinfo
 .git
-.gitignore
 .claude/
 .agents/
 .DS_Store
