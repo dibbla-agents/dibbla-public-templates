@@ -34,14 +34,21 @@ Lead with what broke and its user impact, then the root cause if stated, then th
 // summariseBody calls Claude through the Dibbla AI Gateway to summarise one
 // incident body. authToken is the caller's Dibbla token; hostname is the
 // incoming request host, used to attribute the call to the deployed app when
-// DIBBLA_ALIAS is not set at deploy time.
+// DIBBLA_ALIAS is not set (it is, on every Dibbla deploy — the fallback is
+// for local runs and older platforms).
+//
+// Dibbla injects DIBBLA_AI_GATEWAY_URL and DIBBLA_ALIAS into every deployed
+// app, Dockerfile or dibbla.yaml alike, so nothing here needs configuring
+// except the token. X-Dibbla-App accepts either the short alias ("lumen") or
+// the full deployment name ("lumen-0ee1f995"); both land on the same app in
+// the console's AI usage tab.
 //
 // It is wired up in stage 3 of the tutorial. It is defined now so the
 // integration point is real, not invented by the reader.
 func summariseBody(body, authToken, hostname string) (string, error) {
 	gatewayURL := strings.TrimRight(os.Getenv("DIBBLA_AI_GATEWAY_URL"), "/")
 	if gatewayURL == "" {
-		gatewayURL = "https://ai.dibbla.net"
+		gatewayURL = "https://ai.dibbla.com"
 	}
 
 	payload, _ := json.Marshal(map[string]any{
@@ -63,13 +70,7 @@ func summariseBody(body, authToken, hostname string) (string, error) {
 
 	alias := os.Getenv("DIBBLA_ALIAS")
 	if alias == "" {
-		if host, _, ok := strings.Cut(hostname, ":"); ok || host != "" {
-			if strings.HasSuffix(host, ".dibbla.net") {
-				alias = strings.TrimSuffix(host, ".dibbla.net")
-			} else if strings.HasSuffix(host, ".dibbla.com") {
-				alias = strings.TrimSuffix(host, ".dibbla.com")
-			}
-		}
+		alias = aliasFromHost(hostname)
 	}
 	if alias != "" {
 		req.Header.Set("X-Dibbla-App", alias)
@@ -105,4 +106,16 @@ func summariseBody(body, authToken, hostname string) (string, error) {
 		}
 	}
 	return "", fmt.Errorf("ai gateway response contained no text")
+}
+
+// aliasFromHost returns the app name from a Dibbla app host
+// ("lumen-0ee1f995.dibbla.app" → "lumen-0ee1f995"), or "" for any other host.
+func aliasFromHost(hostname string) string {
+	host, _, _ := strings.Cut(hostname, ":")
+	for _, suffix := range []string{".dibbla.app", ".dibbla.com", ".dibbla.net"} {
+		if name, ok := strings.CutSuffix(host, suffix); ok && name != "" && !strings.Contains(name, ".") {
+			return name
+		}
+	}
+	return ""
 }
