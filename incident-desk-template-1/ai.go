@@ -39,9 +39,10 @@ Lead with what broke and its user impact, then the root cause if stated, then th
 //
 // Dibbla injects DIBBLA_AI_GATEWAY_URL and DIBBLA_ALIAS into every deployed
 // app, Dockerfile or dibbla.yaml alike, so nothing here needs configuring
-// except the token. X-Dibbla-App accepts either the short alias ("lumen") or
-// the full deployment name ("lumen-0ee1f995"); both land on the same app in
-// the console's AI usage tab.
+// except the token. X-Dibbla-App must be the full deployment name
+// ("lumen-0ee1f995" on dibbla.app) — exactly DIBBLA_ALIAS. The short name
+// you deployed with ("lumen") is not recognised; such a call still works
+// but is recorded as external instead of on the app.
 //
 // It is wired up in stage 3 of the tutorial. It is defined now so the
 // integration point is real, not invented by the reader.
