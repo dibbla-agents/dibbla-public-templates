@@ -131,7 +131,9 @@ When the user asks to deploy, use the **Dibbla CLI skill**:
 
 - `POST /api/incidents/:id/summarise` and `/triage` return **HTTP 501** today.
   `ai.go` already carries a working gateway call (`summariseBody`); stage 3 calls
-  it from `handleSummarise`, stage 4 adds triage.
+  it from `handleSummarise`, stage 4 adds triage. Dibbla injects
+  `DIBBLA_AI_GATEWAY_URL` and `DIBBLA_ALIAS` into the deployed app (Dockerfile
+  deploys too); the only value to set is the `DIBBLA_API_TOKEN` secret.
 - `incident_rollups` is empty until stage 5 builds a nightly job that writes
   per-region summaries; `GET /api/rollups` already reads them.
 
